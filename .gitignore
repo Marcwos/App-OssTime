@@ -1,0 +1,57 @@
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de IDE
+.idea/
+*.iml
+
+# Configuración local
+local.properties
+
+# Directorios de Gradle
+.gradle/
+build/
+*/build/
+
+# Cachés y salidas de compilación
+captures/
+.cxx/
+externalNativeBuild/
+
+# Archivos generados por Android Studio
+.navigation/
+.android/
+.kotlinc/
+
+# Configuración específica de usuario
+*.log
+*.swp
+*.tmp
+*.lock
+
+# Archivos de testing temporales
+test-output/
+*.hprof
+
+# Configuración de firma (no la subas nunca)
+**/keystore.jks
+**/key.properties
+**/signing.properties
+
+# Archivos de empaquetado
+*.apk
+*.ap_
+*.aab
+
+# Configuración de IntelliJ/VSCode/Cursor opcional
+.vscode/
+cursor.json
+
+# Archivos del emulador
+*.haxm
+*.avd
+
+# Otros archivos temporales o cacheados
+buildSrc/.gradle/
+.gradle/
