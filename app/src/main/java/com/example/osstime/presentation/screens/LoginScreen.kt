@@ -1,13 +1,16 @@
 package com.example.osstime.presentation.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.osstime.R
 
 @Composable
 fun LoginScreen() {
@@ -23,10 +26,12 @@ fun LoginScreen() {
             modifier = Modifier.align(Alignment.Center),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Oss Time",
-                style = MaterialTheme.typography.headlineLarge,
-                fontSize = 32.sp
+            Image(
+                painter = painterResource(id = R.drawable.oss_tiime_letra_negro),
+                contentDescription = "Logo de Oss Time",
+                modifier = Modifier
+                    .size(250.dp)
+                    .padding(bottom = 24.dp)
             )
             Spacer(modifier = Modifier.height(24.dp))
 
