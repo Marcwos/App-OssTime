@@ -8,7 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.example.osstime.presentation.screens.LoginScreen
+import androidx.navigation.compose.rememberNavController
+import com.example.osstime.presentation.navigation.NavGraph
 import com.example.osstime.ui.theme.OssTimeTheme
 
 class MainActivity : ComponentActivity() {
@@ -21,7 +22,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    LoginScreen()
+                    val navController = rememberNavController()
+                    
+                    NavGraph(navController = navController)
                 }
             }
         }
