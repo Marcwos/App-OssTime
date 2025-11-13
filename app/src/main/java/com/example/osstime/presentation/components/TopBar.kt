@@ -22,7 +22,9 @@ fun TopBar(
 ) {
     TopAppBar(
         title = {
-            Column {
+            Column(
+                modifier = Modifier.padding(top = 8.dp) // 👈 opcional para centrar verticalmente
+            ) {
                 Text(
                     text = "Hola Profesor $userName!",
                     style = MaterialTheme.typography.titleMedium.copy(
@@ -50,7 +52,7 @@ fun TopBar(
         },
         modifier = Modifier
             .fillMaxWidth()
-            .height(64.dp),
+            .height(90.dp),   // 👈 altura correcta SIN duplicados
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.background,
             titleContentColor = MaterialTheme.colorScheme.onBackground
