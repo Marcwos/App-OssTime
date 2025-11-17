@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.osstime.presentation.screens.HomeScreen
 import com.example.osstime.presentation.screens.LoginScreen
+import com.example.osstime.presentation.screens.AttendanceScreen
 
 @Composable
 fun NavGraph(navController: NavHostController) {
@@ -15,5 +16,6 @@ fun NavGraph(navController: NavHostController) {
     ) {
         composable("login") { LoginScreen(navController) }
         composable("home") { HomeScreen(navController) }
+        composable("attendance") { AttendanceScreen(navController) }
     }
 }

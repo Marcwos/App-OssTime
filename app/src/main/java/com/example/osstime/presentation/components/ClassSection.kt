@@ -9,13 +9,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.osstime.presentation.screens.ClassInfo
+import androidx.navigation.NavHostController
+import com.example.osstime.domain.model.ClassSession
 
 @Composable
 fun ClassSection(
     title: String,
     date: String,
-    classes: List<ClassInfo>
+    classes: List<ClassSession>,
+    navController: NavHostController
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
 
@@ -37,8 +39,8 @@ fun ClassSection(
             verticalArrangement = Arrangement.spacedBy(20.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            items(classes) { classInfo ->
-                ClassCard(info = classInfo)
+            items(classes) { classSession ->
+                ClassCard(classSession = classSession, navController = navController)
             }
         }
     }

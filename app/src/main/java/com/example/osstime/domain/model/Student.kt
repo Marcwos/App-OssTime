@@ -1,3 +1,5 @@
+package com.example.osstime.domain.model
+
 data class Student(
     val id: String,
     val firstName: String,

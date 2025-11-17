@@ -5,28 +5,36 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
+import com.example.osstime.domain.model.ClassSession
 import com.example.osstime.presentation.components.TopBar
 import com.example.osstime.presentation.components.ClassSection
 import com.example.osstime.presentation.components.Title
 
-data class ClassInfo(
-    val name: String,
-    val description: String,
-    val time: String,
-    val tipo: String
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavController) {
+fun HomeScreen(navController: NavHostController) {
 
     // 🔹 Datos falsos por ahora (para pruebas)
     val todayClass = listOf(
-        ClassInfo("Pasada de media guardia", "Pase + finalización kata-gatame", "7:00 PM", "NOGI"),
+        ClassSession(
+            id = "1",
+            name = "Pasada de media guardia",
+            type = "NOGI",
+            date = "Jueves 7/12/25",
+            description = "Pase + finalización kata-gatame",
+            time = "7:00 PM"
+        ),
     )
     val tomorrowClass = listOf(
-        ClassInfo("Guardia Lazo", "Guardia Lazo + raspada", "7:00 PM", "GI"),
+        ClassSession(
+            id = "2",
+            name = "Guardia Lazo",
+            type = "GI",
+            date = "Viernes 8/12/25",
+            description = "Guardia Lazo + raspada",
+            time = "7:00 PM"
+        ),
     )
 
     Scaffold(
@@ -46,7 +54,8 @@ fun HomeScreen(navController: NavController) {
             ClassSection(
                 title = "Clases del día hoy",
                 date = "Jueves 7/12/25",
-                classes = todayClass
+                classes = todayClass,
+                navController = navController
             )
 
             Spacer(Modifier.height(24.dp))
@@ -54,7 +63,8 @@ fun HomeScreen(navController: NavController) {
             ClassSection(
                 title = "Clases del día de mañana",
                 date = "Viernes 8/12/25",
-                classes = tomorrowClass
+                classes = tomorrowClass,
+                navController = navController
             )
         }
     }

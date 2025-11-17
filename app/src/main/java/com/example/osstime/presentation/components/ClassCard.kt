@@ -11,12 +11,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.osstime.presentation.screens.ClassInfo
+import com.example.osstime.domain.model.ClassSession
+import androidx.navigation.NavHostController
 
 @Composable
-fun ClassCard(info: ClassInfo) {
+fun ClassCard(classSession: ClassSession, navController: NavHostController) {
 
-    val tipoColor = when (info.tipo.uppercase()) {
+    val tipoColor = when (classSession.type.uppercase()) {
         "NOGI" -> Color(0xFFB7CB76)  // verde suave
         "GI" -> Color(0xFF8AB5FF)    // azul suave
         else -> MaterialTheme.colorScheme.primary
@@ -43,7 +44,7 @@ fun ClassCard(info: ClassInfo) {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = info.name,
+                    text = classSession.name,
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
@@ -59,7 +60,7 @@ fun ClassCard(info: ClassInfo) {
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = info.tipo,
+                        text = classSession.type,
                         style = MaterialTheme.typography.bodySmall.copy(
                             fontWeight = FontWeight.SemiBold
                         )
@@ -70,7 +71,7 @@ fun ClassCard(info: ClassInfo) {
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = info.description,
+                text = classSession.description,
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = Color.DarkGray
                 )
@@ -85,7 +86,7 @@ fun ClassCard(info: ClassInfo) {
             ) {
 
                 Text(
-                    text = info.time,
+                    text = classSession.time,
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
@@ -93,7 +94,7 @@ fun ClassCard(info: ClassInfo) {
                 )
 
                 Button(
-                    onClick = { /* asistencia */ },
+                    onClick = { navController.navigate("attendance") },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFF7D96F)   // amarillo mockup
                     ),
