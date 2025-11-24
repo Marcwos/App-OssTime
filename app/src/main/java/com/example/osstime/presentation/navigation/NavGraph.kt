@@ -9,11 +9,13 @@ import androidx.navigation.navArgument
 import com.example.osstime.domain.model.ClassSession
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
+import com.example.osstime.domain.model.Student
 import com.example.osstime.presentation.screens.HomeScreen
 import com.example.osstime.presentation.screens.LoginScreen
 import com.example.osstime.presentation.screens.AttendanceScreen
 import com.example.osstime.presentation.screens.StudentsScreen
 import com.example.osstime.presentation.screens.CreateClassScreen
+import com.example.osstime.presentation.screens.CreateStudentScreen
 import com.example.osstime.presentation.screens.ProfileScreen
 
 @Composable
@@ -51,9 +53,24 @@ fun NavGraph(navController: NavHostController) {
                 time = classTime
             )
             
-            AttendanceScreen(navController, classSession)
+            // Lista de estudiantes (en el futuro vendrá de un ViewModel/Repository compartido)
+            val students = listOf(
+                Student(id = "1", firstName = "Luis Fernando", lastName = "Zambrano Ponce", belt = "Blanco"),
+                Student(id = "2", firstName = "Daniel Alejandro", lastName = "Loor Vélez", belt = "Blanco"),
+                Student(id = "3", firstName = "Kevin Matías", lastName = "Moreira Cedeño", belt = "Azul"),
+                Student(id = "4", firstName = "Jesús Andrés", lastName = "Gómez Mantuano", belt = "Blanco"),
+                Student(id = "5", firstName = "Carlos David", lastName = "Villamar Chancay", belt = "Amarillo"),
+                Student(id = "6", firstName = "Jorge Sebastián", lastName = "Delgado Reyes", belt = "Naranja"),
+                Student(id = "7", firstName = "Mario Esteban", lastName = "Mendoza Chávez", belt = "Azul"),
+                Student(id = "8", firstName = "Anthony Joel", lastName = "Cárdenas Palma", belt = "Blanco"),
+                Student(id = "9", firstName = "Bryan Eduardo", lastName = "Quiroz Macías", belt = "Verde"),
+                Student(id = "10", firstName = "Ángel Francisco", lastName = "Barreto Álava", belt = "Azul")
+            )
+            
+            AttendanceScreen(navController, classSession, students)
         }
         composable("students") { StudentsScreen(navController) }
+        composable("create_student") { CreateStudentScreen(navController) }
         composable("create_class") { CreateClassScreen(navController) }
         composable("profile") { ProfileScreen(navController) }
     }

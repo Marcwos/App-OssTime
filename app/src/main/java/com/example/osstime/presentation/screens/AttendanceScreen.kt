@@ -18,27 +18,15 @@ import com.example.osstime.presentation.components.Title
 @Composable
 fun AttendanceScreen(
     navController: NavHostController,
-    classInfo: ClassSession
+    classInfo: ClassSession,
+    students: List<Student>
 ) {
     val classSession = classInfo
-    
-    val defaultStudents = listOf(
-        Student(id = "1", firstName = "Luis Fernando", lastName = "Zambrano Ponce", belt = "Blanco"),
-        Student(id = "2", firstName = "Daniel Alejandro", lastName = "Loor Vélez", belt = "Blanco"),
-        Student(id = "3", firstName = "Kevin Matías", lastName = "Moreira Cedeño", belt = "Azul"),
-        Student(id = "4", firstName = "Jesús Andrés", lastName = "Gómez Mantuano", belt = "Blanco"),
-        Student(id = "5", firstName = "Carlos David", lastName = "Villamar Chancay", belt = "Amarillo"),
-        Student(id = "6", firstName = "Jorge Sebastián", lastName = "Delgado Reyes", belt = "Naranja"),
-        Student(id = "7", firstName = "Mario Esteban", lastName = "Mendoza Chávez", belt = "Azul"),
-        Student(id = "8", firstName = "Anthony Joel", lastName = "Cárdenas Palma", belt = "Blanco"),
-        Student(id = "9", firstName = "Bryan Eduardo", lastName = "Quiroz Macías", belt = "Verde"),
-        Student(id = "10", firstName = "Ángel Francisco", lastName = "Barreto Álava", belt = "Azul")
-    )
 
     
     val attendanceState = remember {
         mutableStateMapOf<String, Boolean>().apply {
-            defaultStudents.forEach { put(it.id, false) } // Por defecto todos AUSENTES
+            students.forEach { put(it.id, false) } // Por defecto todos AUSENTES
         }
     }
 
@@ -79,7 +67,7 @@ fun AttendanceScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.weight(1f)
         ) {
-            items(defaultStudents) { student ->
+            items(students) { student ->
                 StudentAttendanceItem(
                     student = student,
                     isPresent = attendanceState[student.id] == true,
