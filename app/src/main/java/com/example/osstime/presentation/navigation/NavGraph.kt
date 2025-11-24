@@ -15,6 +15,7 @@ import com.example.osstime.presentation.screens.LoginScreen
 import com.example.osstime.presentation.screens.AttendanceScreen
 import com.example.osstime.presentation.screens.StudentsScreen
 import com.example.osstime.presentation.screens.CreateClassScreen
+import com.example.osstime.presentation.screens.CreateClassFormScreen
 import com.example.osstime.presentation.screens.CreateStudentScreen
 import com.example.osstime.presentation.screens.ProfileScreen
 
@@ -59,12 +60,12 @@ fun NavGraph(navController: NavHostController) {
                 Student(id = "2", firstName = "Daniel Alejandro", lastName = "Loor Vélez", belt = "Blanco"),
                 Student(id = "3", firstName = "Kevin Matías", lastName = "Moreira Cedeño", belt = "Azul"),
                 Student(id = "4", firstName = "Jesús Andrés", lastName = "Gómez Mantuano", belt = "Blanco"),
-                Student(id = "5", firstName = "Carlos David", lastName = "Villamar Chancay", belt = "Amarillo"),
-                Student(id = "6", firstName = "Jorge Sebastián", lastName = "Delgado Reyes", belt = "Naranja"),
-                Student(id = "7", firstName = "Mario Esteban", lastName = "Mendoza Chávez", belt = "Azul"),
+                Student(id = "5", firstName = "Carlos David", lastName = "Villamar Chancay", belt = "Morado"),
+                Student(id = "6", firstName = "Jorge Sebastián", lastName = "Delgado Reyes", belt = "Blanco"),
+                Student(id = "7", firstName = "Mario Esteban", lastName = "Mendoza Chávez", belt = "Marrón"),
                 Student(id = "8", firstName = "Anthony Joel", lastName = "Cárdenas Palma", belt = "Blanco"),
                 Student(id = "9", firstName = "Bryan Eduardo", lastName = "Quiroz Macías", belt = "Verde"),
-                Student(id = "10", firstName = "Ángel Francisco", lastName = "Barreto Álava", belt = "Azul")
+                Student(id = "10", firstName = "Ángel Francisco", lastName = "Barreto Álava", belt = "Negro")
             )
             
             AttendanceScreen(navController, classSession, students)
@@ -72,6 +73,7 @@ fun NavGraph(navController: NavHostController) {
         composable("students") { StudentsScreen(navController) }
         composable("create_student") { CreateStudentScreen(navController) }
         composable("create_class") { CreateClassScreen(navController) }
+        composable("create_class_form") { CreateClassFormScreen(navController) }
         composable("profile") { ProfileScreen(navController) }
     }
 }
