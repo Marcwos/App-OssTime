@@ -10,6 +10,7 @@ import com.example.osstime.domain.model.ClassSession
 import com.example.osstime.presentation.components.TopBar
 import com.example.osstime.presentation.components.ClassSection
 import com.example.osstime.presentation.components.Title
+import com.example.osstime.presentation.components.BottomNavigationBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,7 +39,8 @@ fun HomeScreen(navController: NavHostController) {
     )
 
     Scaffold(
-        topBar = { TopBar() }
+        topBar = { TopBar() },
+        bottomBar = { BottomNavigationBar(navController) }
     ) { padding ->
         Column(
             modifier = Modifier
