@@ -112,7 +112,10 @@ fun CreateClassScreen(navController: NavHostController) {
                     modifier = Modifier.weight(1f)
                 ) {
                     items(allClasses) { classSession ->
-                        ClassCardView(classSession = classSession)
+                        ClassCardView(
+                            classSession = classSession,
+                            navController = navController
+                        )
                     }
                 }
             }

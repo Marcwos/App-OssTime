@@ -1,6 +1,7 @@
 package com.example.osstime.presentation.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -11,10 +12,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import com.example.osstime.domain.model.ClassSession
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 @Composable
-fun ClassCardView(classSession: ClassSession) {
+fun ClassCardView(
+    classSession: ClassSession,
+    navController: NavHostController
+) {
     val tipoColor = when (classSession.type.uppercase()) {
         "NOGI" -> Color(0xFFB7CB76)
         "GI" -> Color(0xFF8AB5FF)
@@ -25,7 +32,17 @@ fun ClassCardView(classSession: ClassSession) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
-            .height(140.dp),
+            .height(140.dp)
+            .clickable {
+                val encodedId = URLEncoder.encode(classSession.id, StandardCharsets.UTF_8.toString())
+                val encodedName = URLEncoder.encode(classSession.name, StandardCharsets.UTF_8.toString())
+                val encodedType = URLEncoder.encode(classSession.type, StandardCharsets.UTF_8.toString())
+                val encodedDate = URLEncoder.encode(classSession.date, StandardCharsets.UTF_8.toString())
+                val encodedDescription = URLEncoder.encode(classSession.description, StandardCharsets.UTF_8.toString())
+                val encodedTime = URLEncoder.encode(classSession.time, StandardCharsets.UTF_8.toString())
+                val route = "class_detail/$encodedId/$encodedName/$encodedType/$encodedDate/$encodedDescription/$encodedTime"
+                navController.navigate(route)
+            },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
