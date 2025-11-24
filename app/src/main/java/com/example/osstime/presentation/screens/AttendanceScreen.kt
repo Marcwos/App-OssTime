@@ -18,15 +18,9 @@ import com.example.osstime.presentation.components.Title
 @Composable
 fun AttendanceScreen(
     navController: NavHostController,
-    classInfo: ClassSession? = null,
-    students: List<Student>? = null
+    classInfo: ClassSession
 ) {
-    val defaultClassInfo = classInfo ?: ClassSession(
-        id = "1",
-        name = "Pasada de media guardia",
-        type = "NOGI",
-        date = "Jueves 7/12/25"
-    )
+    val classSession = classInfo
     
     val defaultStudents = listOf(
         Student(id = "1", firstName = "Luis Fernando", lastName = "Zambrano Ponce", belt = "Blanco"),
@@ -60,7 +54,7 @@ fun AttendanceScreen(
         )
 
         Text(
-            text = defaultClassInfo.date,
+            text = classSession.date,
             style = MaterialTheme.typography.bodySmall
         )
 
@@ -68,7 +62,7 @@ fun AttendanceScreen(
 
         // Nombre + tipo de clase
         Text(
-            text = "${defaultClassInfo.name} • ${defaultClassInfo.type}",
+            text = "${classSession.name} • ${classSession.type}",
             style = MaterialTheme.typography.titleMedium
         )
 

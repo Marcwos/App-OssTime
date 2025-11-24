@@ -13,6 +13,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.osstime.domain.model.ClassSession
 import androidx.navigation.NavHostController
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 @Composable
 fun ClassCard(classSession: ClassSession, navController: NavHostController) {
@@ -94,7 +96,16 @@ fun ClassCard(classSession: ClassSession, navController: NavHostController) {
                 )
 
                 Button(
-                    onClick = { navController.navigate("attendance") },
+                    onClick = {
+                        val encodedId = URLEncoder.encode(classSession.id, StandardCharsets.UTF_8.toString())
+                        val encodedName = URLEncoder.encode(classSession.name, StandardCharsets.UTF_8.toString())
+                        val encodedType = URLEncoder.encode(classSession.type, StandardCharsets.UTF_8.toString())
+                        val encodedDate = URLEncoder.encode(classSession.date, StandardCharsets.UTF_8.toString())
+                        val encodedDescription = URLEncoder.encode(classSession.description, StandardCharsets.UTF_8.toString())
+                        val encodedTime = URLEncoder.encode(classSession.time, StandardCharsets.UTF_8.toString())
+                        val route = "attendance/$encodedId/$encodedName/$encodedType/$encodedDate/$encodedDescription/$encodedTime"
+                        navController.navigate(route)
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFF7D96F)   // amarillo mockup
                     ),
