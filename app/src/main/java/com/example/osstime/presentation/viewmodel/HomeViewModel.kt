@@ -4,13 +4,18 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import android.util.Log
 import com.example.osstime.domain.model.ClassSession
+import com.example.osstime.domain.model.Student
 import com.example.osstime.domain.repository.ClassRepository
+import com.example.osstime.domain.repository.StudentRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import java.util.Calendar
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * ViewModel para HomeScreen
@@ -18,7 +23,8 @@ import java.util.Calendar
  * Observa cambios en tiempo real desde Firestore
  */
 class HomeViewModel(
-    private val classRepository: ClassRepository
+    private val classRepository: ClassRepository,
+    private val studentRepository: StudentRepository
 ) : ViewModel() {
 
     private val _allClasses = MutableStateFlow<List<ClassSession>>(emptyList())
@@ -30,6 +36,12 @@ class HomeViewModel(
     private val _tomorrowClasses = MutableStateFlow<List<ClassSession>>(emptyList())
     val tomorrowClasses: StateFlow<List<ClassSession>> = _tomorrowClasses.asStateFlow()
 
+    private val _upcomingClasses = MutableStateFlow<List<ClassSession>>(emptyList())
+    val upcomingClasses: StateFlow<List<ClassSession>> = _upcomingClasses.asStateFlow()
+
+    private val _recentStudents = MutableStateFlow<List<Student>>(emptyList())
+    val recentStudents: StateFlow<List<Student>> = _recentStudents.asStateFlow()
+
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -38,6 +50,7 @@ class HomeViewModel(
 
     init {
         observeClasses()
+        observeStudents()
     }
 
     /**
@@ -62,11 +75,30 @@ class HomeViewModel(
 
                     _todayClasses.value = classList.filter { isToday(it.date, today) }
                     _tomorrowClasses.value = classList.filter { isTomorrow(it.date, tomorrow) }
+                    _upcomingClasses.value = classList.filter { isUpcoming(it.date) }.take(5)
                     
                     Log.d("HomeViewModel", "Clases de hoy: ${_todayClasses.value.size}")
                     Log.d("HomeViewModel", "Clases de mañana: ${_tomorrowClasses.value.size}")
+                    Log.d("HomeViewModel", "Clases próximas: ${_upcomingClasses.value.size}")
                     
                     _isLoading.value = false
+                }
+        }
+    }
+
+    /**
+     * Observa cambios en tiempo real de los estudiantes desde Firestore
+     */
+    private fun observeStudents() {
+        viewModelScope.launch {
+            studentRepository.observeStudents()
+                .catch { e ->
+                    Log.e("HomeViewModel", "Error al observar estudiantes", e)
+                }
+                .collect { studentList ->
+                    Log.d("HomeViewModel", "Estudiantes recibidos: ${studentList.size}")
+                    // Mostrar los 5 estudiantes más recientes
+                    _recentStudents.value = studentList.take(5)
                 }
         }
     }
@@ -87,5 +119,14 @@ class HomeViewModel(
         // Implementación simplificada - en producción usar formato de fecha real
         return date.contains("mañana", ignoreCase = true) ||
                date.contains((calendar.get(Calendar.DAY_OF_MONTH) + 1).toString())
+    }
+
+    /**
+     * Verifica si una fecha es próxima (futuras)
+     */
+    private fun isUpcoming(date: String): Boolean {
+        // Por ahora retorna true para todas las clases
+        // En producción: parsear fecha y comparar con hoy
+        return true
     }
 }

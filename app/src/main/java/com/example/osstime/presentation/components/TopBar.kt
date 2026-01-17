@@ -17,15 +17,6 @@ fun TopBar(
 ) {
     TopAppBar(
         title = { },
-
-        navigationIcon = {
-            IconButton(onClick = onMenuClick) {
-                Icon(
-                    imageVector = Icons.Default.Menu,
-                    contentDescription = "Menú"
-                )
-            }
-        },
         actions = {
             IconButton(onClick = onProfileClick) {
                 Icon(

@@ -16,6 +16,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.osstime.data.repository.ClassRepositoryImpl
+import com.example.osstime.data.repository.StudentRepositoryImpl
 import com.example.osstime.presentation.components.BottomNavigationBar
 import com.example.osstime.presentation.components.ClassCardView
 import com.example.osstime.presentation.components.Title
@@ -27,7 +28,7 @@ import com.example.osstime.presentation.viewmodel.HomeViewModel
 fun CreateClassScreen(
     navController: NavHostController,
     viewModel: HomeViewModel = viewModel {
-        HomeViewModel(ClassRepositoryImpl())
+        HomeViewModel(ClassRepositoryImpl(), StudentRepositoryImpl())
     }
 ) {
     // Estados del ViewModel - se actualizan en tiempo real
