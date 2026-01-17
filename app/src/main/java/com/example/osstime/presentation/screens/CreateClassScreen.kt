@@ -7,42 +7,33 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import com.example.osstime.domain.model.ClassSession
+import com.example.osstime.data.repository.ClassRepositoryImpl
 import com.example.osstime.presentation.components.BottomNavigationBar
 import com.example.osstime.presentation.components.ClassCardView
 import com.example.osstime.presentation.components.Title
 import com.example.osstime.presentation.components.TopBar
+import com.example.osstime.presentation.viewmodel.HomeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateClassScreen(navController: NavHostController) {
-    // Lista de todas las clases (combinando las de hoy y mañana)
-    val allClasses = remember {
-        listOf(
-            ClassSession(
-                id = "1",
-                name = "Pasada de media guardia",
-                type = "NOGI",
-                date = "Jueves 7/12/25",
-                description = "Pase + finalización kata-gatame",
-                time = "7:00 PM"
-            ),
-            ClassSession(
-                id = "2",
-                name = "Guardia Lazo",
-                type = "GI",
-                date = "Viernes 8/12/25",
-                description = "Guardia Lazo + raspada",
-                time = "7:00 PM"
-            )
-        )
+fun CreateClassScreen(
+    navController: NavHostController,
+    viewModel: HomeViewModel = viewModel {
+        HomeViewModel(ClassRepositoryImpl())
     }
+) {
+    // Estados del ViewModel - se actualizan en tiempo real
+    val allClasses by viewModel.allClasses.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = { TopBar() },
@@ -83,7 +74,35 @@ fun CreateClassScreen(navController: NavHostController) {
             
             Spacer(Modifier.height(16.dp))
             
-            if (allClasses.isEmpty()) {
+            // Mostrar error si existe
+            error?.let { errorMessage ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Text(
+                        text = errorMessage,
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+            
+            // Mostrar loading
+            if (isLoading && allClasses.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (allClasses.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

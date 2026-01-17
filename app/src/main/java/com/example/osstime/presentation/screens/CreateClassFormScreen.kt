@@ -11,11 +11,22 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.example.osstime.data.repository.ClassRepositoryImpl
+import com.example.osstime.domain.model.ClassSession
+import com.example.osstime.presentation.viewmodel.HomeViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateClassFormScreen(navController: NavHostController) {
+fun CreateClassFormScreen(
+    navController: NavHostController
+) {
     var className by remember { mutableStateOf("") }
     var classType by remember { mutableStateOf("") }
     var classDate by remember { mutableStateOf("") }
@@ -24,11 +35,51 @@ fun CreateClassFormScreen(navController: NavHostController) {
     
     val classTypes = listOf("GI", "NOGI")
     var expandedType by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     
     val isFormValid = className.isNotBlank() && 
                      classType.isNotBlank() && 
                      classDate.isNotBlank() && 
                      classTime.isNotBlank()
+
+    // Función para guardar la clase
+    fun saveClass() {
+        if (!isFormValid || isLoading) return
+        
+        isLoading = true
+        errorMessage = null
+        
+        // Generar ID único para la clase
+        val classId = UUID.randomUUID().toString()
+        
+        val classSession = ClassSession(
+            id = classId,
+            name = className.trim(),
+            type = classType,
+            date = classDate.trim(),
+            description = classDescription.trim(),
+            time = classTime.trim()
+        )
+        
+        // Guardar usando el repositorio en una coroutine
+        CoroutineScope(Dispatchers.Main).launch {
+            try {
+                val repository = ClassRepositoryImpl()
+                repository.insertClass(classSession)
+                android.util.Log.d("CreateClassForm", "Clase guardada: ${classSession.name}")
+                // Esperar un momento para que se complete la operación
+                delay(1000)
+                isLoading = false
+                // Navegar de vuelta solo si no hay error
+                navController.popBackStack()
+            } catch (e: Exception) {
+                isLoading = false
+                errorMessage = "Error al guardar: ${e.message ?: "Error desconocido"}"
+                android.util.Log.e("CreateClassForm", "Error al guardar clase", e)
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -175,27 +226,51 @@ fun CreateClassFormScreen(navController: NavHostController) {
             
             Spacer(Modifier.height(32.dp))
             
+            // Mostrar mensaje de error si existe
+            errorMessage?.let { error ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = error,
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+            
             // Botón Guardar
             Button(
-                onClick = {
-                    // Aquí se guardaría la clase
-                    navController.popBackStack()
-                },
+                onClick = { saveClass() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                enabled = isFormValid,
+                enabled = isFormValid && !isLoading,
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             ) {
-                Text(
-                    text = "Guardar Clase",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text(
+                        text = "Guardar Clase",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
             
             Spacer(Modifier.height(16.dp))

@@ -2,41 +2,42 @@ package com.example.osstime.presentation.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import com.example.osstime.domain.model.ClassSession
+import com.example.osstime.data.repository.ClassRepositoryImpl
 import com.example.osstime.presentation.components.TopBar
 import com.example.osstime.presentation.components.ClassSection
 import com.example.osstime.presentation.components.Title
 import com.example.osstime.presentation.components.BottomNavigationBar
+import com.example.osstime.presentation.viewmodel.HomeViewModel
 
+/**
+ * HomeScreen optimizado con ViewModel y manejo eficiente de estados
+ * - Usa ViewModel para separar lógica de negocio
+ * - collectAsStateWithLifecycle para respetar el ciclo de vida
+ * - derivedStateOf para cálculos derivados
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavHostController) {
+fun HomeScreen(
+    navController: NavHostController,
+    viewModel: HomeViewModel = viewModel {
+        HomeViewModel(ClassRepositoryImpl())
+    }
+) {
+    // Estados del ViewModel - se actualizan automáticamente
+    val todayClasses by viewModel.todayClasses.collectAsStateWithLifecycle()
+    val tomorrowClasses by viewModel.tomorrowClasses.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
 
-    // 🔹 Datos falsos por ahora (para pruebas)
-    val todayClass = listOf(
-        ClassSession(
-            id = "1",
-            name = "Pasada de media guardia",
-            type = "NOGI",
-            date = "Jueves 7/12/25",
-            description = "Pase + finalización kata-gatame",
-            time = "7:00 PM"
-        ),
-    )
-    val tomorrowClass = listOf(
-        ClassSession(
-            id = "2",
-            name = "Guardia Lazo",
-            type = "GI",
-            date = "Viernes 8/12/25",
-            description = "Guardia Lazo + raspada",
-            time = "7:00 PM"
-        ),
-    )
+    // Cálculo derivado - solo se recalcula cuando cambian las clases
+    val hasTodayClasses = remember { derivedStateOf { todayClasses.isNotEmpty() } }
+    val hasTomorrowClasses = remember { derivedStateOf { tomorrowClasses.isNotEmpty() } }
 
     Scaffold(
         topBar = { TopBar() },
@@ -53,21 +54,34 @@ fun HomeScreen(navController: NavHostController) {
                 text = "Hola Profesor Danager!"
             )
 
-            ClassSection(
-                title = "Clases del día hoy",
-                date = "Jueves 7/12/25",
-                classes = todayClass,
-                navController = navController
-            )
+            // Mostrar loading solo si es necesario
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                )
+            } else {
+                if (hasTodayClasses.value) {
+                    ClassSection(
+                        title = "Clases del día hoy",
+                        date = "Jueves 7/12/25",
+                        classes = todayClasses,
+                        navController = navController
+                    )
 
-            Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(24.dp))
+                }
 
-            ClassSection(
-                title = "Clases del día de mañana",
-                date = "Viernes 8/12/25",
-                classes = tomorrowClass,
-                navController = navController
-            )
+                if (hasTomorrowClasses.value) {
+                    ClassSection(
+                        title = "Clases del día de mañana",
+                        date = "Viernes 8/12/25",
+                        classes = tomorrowClasses,
+                        navController = navController
+                    )
+                }
+            }
         }
     }
 }

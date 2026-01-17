@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -17,15 +18,36 @@ import com.example.osstime.domain.model.ClassSession
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
+/**
+ * ClassCardView optimizado para minimizar recomposiciones
+ */
 @Composable
 fun ClassCardView(
     classSession: ClassSession,
     navController: NavHostController
 ) {
-    val tipoColor = when (classSession.type.uppercase()) {
-        "NOGI" -> Color(0xFFB7CB76)
-        "GI" -> Color(0xFF8AB5FF)
-        else -> MaterialTheme.colorScheme.primary
+    // Calcular color una sola vez y recordarlo
+    val colorScheme = MaterialTheme.colorScheme
+    val tipoColor = remember(classSession.type, colorScheme) {
+        when (classSession.type.uppercase()) {
+            "NOGI" -> Color(0xFFB7CB76)
+            "GI" -> Color(0xFF8AB5FF)
+            else -> colorScheme.primary
+        }
+    }
+    
+    // Pre-calcular la ruta de navegación
+    val navigationRoute = remember(classSession) {
+        val encodedId = URLEncoder.encode(classSession.id, StandardCharsets.UTF_8.toString())
+        val encodedName = URLEncoder.encode(classSession.name, StandardCharsets.UTF_8.toString())
+        val encodedType = URLEncoder.encode(classSession.type, StandardCharsets.UTF_8.toString())
+        val encodedDate = URLEncoder.encode(classSession.date, StandardCharsets.UTF_8.toString())
+        // Usar "_" como placeholder si description o time están vacíos para evitar parámetros vacíos en la URL
+        val description = if (classSession.description.isBlank()) "_" else classSession.description
+        val time = if (classSession.time.isBlank()) "_" else classSession.time
+        val encodedDescription = URLEncoder.encode(description, StandardCharsets.UTF_8.toString())
+        val encodedTime = URLEncoder.encode(time, StandardCharsets.UTF_8.toString())
+        "class_detail/$encodedId/$encodedName/$encodedType/$encodedDate/$encodedDescription/$encodedTime"
     }
 
     Card(
@@ -34,14 +56,7 @@ fun ClassCardView(
             .padding(vertical = 8.dp)
             .height(140.dp)
             .clickable {
-                val encodedId = URLEncoder.encode(classSession.id, StandardCharsets.UTF_8.toString())
-                val encodedName = URLEncoder.encode(classSession.name, StandardCharsets.UTF_8.toString())
-                val encodedType = URLEncoder.encode(classSession.type, StandardCharsets.UTF_8.toString())
-                val encodedDate = URLEncoder.encode(classSession.date, StandardCharsets.UTF_8.toString())
-                val encodedDescription = URLEncoder.encode(classSession.description, StandardCharsets.UTF_8.toString())
-                val encodedTime = URLEncoder.encode(classSession.time, StandardCharsets.UTF_8.toString())
-                val route = "class_detail/$encodedId/$encodedName/$encodedType/$encodedDate/$encodedDescription/$encodedTime"
-                navController.navigate(route)
+                navController.navigate(navigationRoute)
             },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(

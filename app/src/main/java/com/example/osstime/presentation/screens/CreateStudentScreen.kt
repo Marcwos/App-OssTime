@@ -12,20 +12,71 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.example.osstime.data.repository.StudentRepositoryImpl
+import com.example.osstime.domain.model.Student
 import com.example.osstime.presentation.components.TopBar
+import com.example.osstime.presentation.viewmodel.StudentsViewModel
+import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateStudentScreen(navController: NavHostController) {
+fun CreateStudentScreen(
+    navController: NavHostController,
+    viewModel: StudentsViewModel = viewModel {
+        StudentsViewModel(StudentRepositoryImpl())
+    }
+) {
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var belt by remember { mutableStateOf("") }
     
     val belts = listOf("Blanco", "Azul", "Morado", "Marrón", "Negro", "Verde")
     var expanded by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     
     val isFormValid = firstName.isNotBlank() && lastName.isNotBlank() && belt.isNotBlank()
+    
+    // Función para guardar el estudiante
+    fun saveStudent() {
+        if (!isFormValid || isLoading) return
+        
+        isLoading = true
+        errorMessage = null
+        
+        // Generar ID único para el estudiante usando UUID
+        val studentId = UUID.randomUUID().toString()
+        
+        val student = Student(
+            id = studentId,
+            firstName = firstName.trim(),
+            lastName = lastName.trim(),
+            belt = belt
+        )
+        
+        // Guardar usando el ViewModel en una coroutine
+        CoroutineScope(Dispatchers.Main).launch {
+            try {
+                viewModel.addStudent(student)
+                // Esperar un momento para que se complete la operación
+                delay(1000)
+                isLoading = false
+                // Navegar de vuelta solo si no hay error
+                navController.popBackStack()
+            } catch (e: Exception) {
+                isLoading = false
+                errorMessage = "Error al guardar: ${e.message ?: "Error desconocido"}"
+                android.util.Log.e("CreateStudentScreen", "Error al guardar estudiante", e)
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -136,27 +187,51 @@ fun CreateStudentScreen(navController: NavHostController) {
             
             Spacer(Modifier.height(32.dp))
             
+            // Mostrar mensaje de error si existe
+            errorMessage?.let { error ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = error,
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+            
             // Botón Guardar
             Button(
-                onClick = {
-                    // Aquí se guardaría el estudiante
-                    navController.popBackStack()
-                },
+                onClick = { saveStudent() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                enabled = isFormValid,
+                enabled = isFormValid && !isLoading,
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             ) {
-                Text(
-                    text = "Guardar Estudiante",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text(
+                        text = "Guardar Estudiante",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
             
             Spacer(Modifier.height(16.dp))

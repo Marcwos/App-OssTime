@@ -1,0 +1,33 @@
+{
+  "_comment": "Este es un archivo de ejemplo. Debes reemplazarlo con tu archivo google-services.json real descargado de Firebase Console.",
+  "_instructions": "1. Ve a Firebase Console > Tu Proyecto > Configuración del proyecto",
+  "_instructions2": "2. Descarga el archivo google-services.json",
+  "_instructions3": "3. Renombra este archivo a 'google-services.json' y reemplázalo con el archivo descargado",
+  "project_info": {
+    "project_number": "123456789",
+    "project_id": "tu-proyecto-firebase",
+    "storage_bucket": "tu-proyecto-firebase.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:123456789:android:abcdef123456",
+        "android_client_info": {
+          "package_name": "com.example.osstime"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "TU_API_KEY_AQUI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

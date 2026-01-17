@@ -7,27 +7,34 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.example.osstime.data.repository.StudentRepositoryImpl
 import com.example.osstime.domain.model.ClassSession
-import com.example.osstime.domain.model.Student
 import com.example.osstime.presentation.components.AttendedStudentItem
 import com.example.osstime.presentation.components.Title
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
+import com.example.osstime.presentation.viewmodel.StudentsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ClassDetailScreen(
     navController: NavHostController,
     classSession: ClassSession,
-    attendedStudents: List<Student>
+    viewModel: StudentsViewModel = viewModel {
+        StudentsViewModel(StudentRepositoryImpl())
+    }
 ) {
+    // Cargar todos los estudiantes desde Firestore
+    val allStudents by viewModel.students.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    
     val tipoColor = when (classSession.type.uppercase()) {
         "NOGI" -> Color(0xFFB7CB76)
         "GI" -> Color(0xFF8AB5FF)
@@ -137,11 +144,11 @@ fun ClassDetailScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Title(
-                        text = "Estudiantes que asistieron"
+                        text = "Estudiantes Registrados"
                     )
                     
                     Text(
-                        text = "${attendedStudents.size}",
+                        text = "${allStudents.size}",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -149,7 +156,19 @@ fun ClassDetailScreen(
                 }
             }
             
-            if (attendedStudents.isEmpty()) {
+            // Mostrar loading
+            if (isLoading && allStudents.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+            } else if (allStudents.isEmpty()) {
                 item {
                     Box(
                         modifier = Modifier
@@ -167,7 +186,7 @@ fun ClassDetailScreen(
                             )
                             Spacer(Modifier.height(8.dp))
                             Text(
-                                text = "Aún no se ha tomado asistencia para esta clase",
+                                text = "Agrega estudiantes desde la pantalla de Estudiantes",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                             )
@@ -175,7 +194,7 @@ fun ClassDetailScreen(
                     }
                 }
             } else {
-                items(attendedStudents) { student ->
+                items(allStudents) { student ->
                     AttendedStudentItem(student = student)
                 }
             }

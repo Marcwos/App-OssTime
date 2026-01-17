@@ -6,37 +6,40 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import com.example.osstime.domain.model.Student
+import com.example.osstime.data.repository.StudentRepositoryImpl
 import com.example.osstime.presentation.components.BottomNavigationBar
 import com.example.osstime.presentation.components.StudentItem
 import com.example.osstime.presentation.components.Title
 import com.example.osstime.presentation.components.TopBar
+import com.example.osstime.presentation.viewmodel.StudentsViewModel
 
+/**
+ * StudentsScreen optimizado con ViewModel
+ * - Usa ViewModel para separar lógica de negocio
+ * - Observa cambios en tiempo real desde Firestore
+ * - collectAsStateWithLifecycle para respetar el ciclo de vida
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StudentsScreen(navController: NavHostController) {
-    // Lista de estudiantes (en el futuro vendrá de un ViewModel/Repository)
-    val students = remember {
-        listOf(
-            Student(id = "1", firstName = "Luis Fernando", lastName = "Zambrano Ponce", belt = "Blanco"),
-            Student(id = "2", firstName = "Daniel Alejandro", lastName = "Loor Vélez", belt = "Blanco"),
-            Student(id = "3", firstName = "Kevin Matías", lastName = "Moreira Cedeño", belt = "Azul"),
-            Student(id = "4", firstName = "Jesús Andrés", lastName = "Gómez Mantuano", belt = "Blanco"),
-            Student(id = "5", firstName = "Carlos David", lastName = "Villamar Chancay", belt = "Morado"),
-            Student(id = "6", firstName = "Jorge Sebastián", lastName = "Delgado Reyes", belt = "Blanco"),
-            Student(id = "7", firstName = "Mario Esteban", lastName = "Mendoza Chávez", belt = "Marrón"),
-            Student(id = "8", firstName = "Anthony Joel", lastName = "Cárdenas Palma", belt = "Blanco"),
-            Student(id = "9", firstName = "Bryan Eduardo", lastName = "Quiroz Macías", belt = "Verde"),
-            Student(id = "10", firstName = "Ángel Francisco", lastName = "Barreto Álava", belt = "Negro")
-        )
+fun StudentsScreen(
+    navController: NavHostController,
+    viewModel: StudentsViewModel = viewModel {
+        StudentsViewModel(StudentRepositoryImpl())
     }
+) {
+    // Estados del ViewModel - se actualizan en tiempo real
+    val students by viewModel.students.collectAsStateWithLifecycle()
+    val studentCount by viewModel.studentCount.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = { TopBar() },
@@ -70,14 +73,42 @@ fun StudentsScreen(navController: NavHostController) {
             Spacer(Modifier.height(8.dp))
             
             Text(
-                text = "${students.size} estudiantes registrados",
+                text = "$studentCount estudiantes registrados",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
             
             Spacer(Modifier.height(16.dp))
             
-            if (students.isEmpty()) {
+            // Mostrar error si existe
+            error?.let { errorMessage ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Text(
+                        text = errorMessage,
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+            
+            // Mostrar loading
+            if (isLoading && students.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (students.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -101,6 +132,7 @@ fun StudentsScreen(navController: NavHostController) {
                     }
                 }
             } else {
+                // LazyColumn con lista simple - actualización en tiempo real
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.weight(1f)

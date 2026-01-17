@@ -39,6 +39,9 @@ test-output/
 **/key.properties
 **/signing.properties
 
+# Firebase
+**/google-services.json
+
 # Archivos de empaquetado
 *.apk
 *.ap_
