@@ -15,6 +15,9 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.osstime.data.repository.ClassRepositoryImpl
 import com.example.osstime.domain.model.ClassSession
+import com.example.osstime.domain.model.Schedule
+import com.example.osstime.presentation.viewmodel.CreateClassViewModel
+import com.example.osstime.presentation.viewmodel.CreateClassUiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -22,10 +25,19 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ * Pantalla para crear una nueva clase.
+ * 
+ * @param navController Controlador de navegación
+ * @param professorId ID del profesor logueado (null si es admin o modo legacy)
+ * @param createClassViewModel ViewModel para gestionar horarios del profesor (opcional)
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateClassFormScreen(
-    navController: NavHostController
+    navController: NavHostController,
+    professorId: String? = null,
+    createClassViewModel: CreateClassViewModel? = null
 ) {
     var className by remember { mutableStateOf("") }
     var classType by remember { mutableStateOf("") }
@@ -38,25 +50,70 @@ fun CreateClassFormScreen(
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     
+    // Estados para el selector de horario (solo para profesores)
+    var expandedSchedule by remember { mutableStateOf(false) }
+    var selectedSchedule by remember { mutableStateOf<Schedule?>(null) }
+    
+    // Estados del ViewModel si está disponible
+    val professorSchedules by createClassViewModel?.professorSchedules?.collectAsState() ?: remember { mutableStateOf(emptyList()) }
+    val isLoadingSchedules by createClassViewModel?.isLoadingSchedules?.collectAsState() ?: remember { mutableStateOf(false) }
+    val viewModelUiState by createClassViewModel?.uiState?.collectAsState() ?: remember { mutableStateOf(CreateClassUiState.Idle) }
+    
+    // Cargar horarios del profesor si aplica
+    LaunchedEffect(professorId) {
+        if (professorId != null && createClassViewModel != null) {
+            createClassViewModel.loadProfessorSchedules(professorId)
+        }
+    }
+    
+    // Manejar éxito desde el ViewModel
+    LaunchedEffect(viewModelUiState) {
+        when (viewModelUiState) {
+            is CreateClassUiState.ClassCreated -> {
+                navController.popBackStack()
+                createClassViewModel?.resetState()
+            }
+            is CreateClassUiState.Error -> {
+                errorMessage = (viewModelUiState as CreateClassUiState.Error).message
+            }
+            else -> {}
+        }
+    }
+    
     // Estados para los pickers
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState()
     val timePickerState = rememberTimePickerState()
     
+    // Validación del formulario
     val isFormValid = className.isNotBlank() && 
                      classType.isNotBlank() && 
                      classDate.isNotBlank() && 
-                     classTime.isNotBlank()
+                     classTime.isNotBlank() &&
+                     // Si es profesor, debe seleccionar un horario
+                     (professorId == null || selectedSchedule != null)
 
     // Función para guardar la clase
     fun saveClass() {
         if (!isFormValid || isLoading) return
         
+        // Si hay ViewModel, usar su método
+        if (createClassViewModel != null) {
+            createClassViewModel.selectSchedule(selectedSchedule!!)
+            createClassViewModel.createClass(
+                date = classDate.trim(),
+                time = classTime.trim(),
+                type = classType,
+                professorId = professorId
+            )
+            return
+        }
+        
+        // Flujo legacy (sin ViewModel)
         isLoading = true
         errorMessage = null
         
-        // Generar ID único para la clase
         val classId = UUID.randomUUID().toString()
         
         val classSession = ClassSession(
@@ -65,19 +122,18 @@ fun CreateClassFormScreen(
             type = classType,
             date = classDate.trim(),
             description = classDescription.trim(),
-            time = classTime.trim()
+            time = classTime.trim(),
+            professorId = professorId,
+            scheduleId = selectedSchedule?.id
         )
         
-        // Guardar usando el repositorio en una coroutine
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 val repository = ClassRepositoryImpl()
                 repository.insertClass(classSession)
                 android.util.Log.d("CreateClassForm", "Clase guardada: ${classSession.name}")
-                // Esperar un momento para que se complete la operación
                 delay(1000)
                 isLoading = false
-                // Navegar de vuelta solo si no hay error
                 navController.popBackStack()
             } catch (e: Exception) {
                 isLoading = false
@@ -181,6 +237,97 @@ fun CreateClassFormScreen(
             
             Spacer(Modifier.height(32.dp))
             
+            // Selector de Horario (solo para profesores)
+            if (professorId != null) {
+                Text(
+                    text = "Horario Asignado",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                
+                if (isLoadingSchedules) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    Spacer(Modifier.height(8.dp))
+                }
+                
+                ExposedDropdownMenuBox(
+                    expanded = expandedSchedule,
+                    onExpandedChange = { expandedSchedule = !expandedSchedule }
+                ) {
+                    OutlinedTextField(
+                        value = selectedSchedule?.let { 
+                            "${it.startDate} - ${it.endDate} (${it.type})"
+                        } ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Seleccionar horario") },
+                        placeholder = { Text("Elige tu horario asignado") },
+                        trailingIcon = { 
+                            Icon(
+                                imageVector = Icons.Default.DateRange,
+                                contentDescription = null
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                        ),
+                        isError = professorSchedules.isEmpty() && !isLoadingSchedules
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expandedSchedule,
+                        onDismissRequest = { expandedSchedule = false }
+                    ) {
+                        if (professorSchedules.isEmpty()) {
+                            DropdownMenuItem(
+                                text = { Text("No tienes horarios asignados") },
+                                onClick = { expandedSchedule = false }
+                            )
+                        } else {
+                            professorSchedules.forEach { schedule ->
+                                DropdownMenuItem(
+                                    text = { 
+                                        Column {
+                                            Text(
+                                                text = "${schedule.startDate} - ${schedule.endDate}",
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
+                                            Text(
+                                                text = "${schedule.startTime} - ${schedule.endTime} • ${schedule.type}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        selectedSchedule = schedule
+                                        // Auto-completar tipo basado en el horario
+                                        classType = schedule.type
+                                        expandedSchedule = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                if (professorSchedules.isEmpty() && !isLoadingSchedules) {
+                    Text(
+                        text = "Contacta al administrador para que te asigne un horario",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+                
+                Spacer(Modifier.height(16.dp))
+            }
+            
             // Campo Nombre
             OutlinedTextField(
                 value = className,
@@ -198,41 +345,63 @@ fun CreateClassFormScreen(
             
             Spacer(Modifier.height(16.dp))
             
-            // Campo Tipo (Dropdown)
-            ExposedDropdownMenuBox(
-                expanded = expandedType,
-                onExpandedChange = { expandedType = !expandedType }
-            ) {
+            // Campo Tipo (Dropdown) - Solo si no es profesor (el tipo viene del horario)
+            if (professorId == null) {
+                ExposedDropdownMenuBox(
+                    expanded = expandedType,
+                    onExpandedChange = { expandedType = !expandedType }
+                ) {
+                    OutlinedTextField(
+                        value = classType,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Tipo de clase") },
+                        placeholder = { Text("Selecciona el tipo") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedType) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                        )
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expandedType,
+                        onDismissRequest = { expandedType = false }
+                    ) {
+                        classTypes.forEach { type ->
+                            DropdownMenuItem(
+                                text = { Text(type) },
+                                onClick = {
+                                    classType = type
+                                    expandedType = false
+                                }
+                            )
+                        }
+                    }
+                }
+                
+                Spacer(Modifier.height(16.dp))
+            } else {
+                // Mostrar tipo como solo lectura si viene del horario
                 OutlinedTextField(
                     value = classType,
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Tipo de clase") },
-                    placeholder = { Text("Selecciona el tipo") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedType) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(),
+                    modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    )
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        disabledBorderColor = MaterialTheme.colorScheme.outline
+                    ),
+                    supportingText = { Text("Definido por tu horario asignado") }
                 )
-                ExposedDropdownMenu(
-                    expanded = expandedType,
-                    onDismissRequest = { expandedType = false }
-                ) {
-                    classTypes.forEach { type ->
-                        DropdownMenuItem(
-                            text = { Text(type) },
-                            onClick = {
-                                classType = type
-                                expandedType = false
-                            }
-                        )
-                    }
-                }
+                
+                Spacer(Modifier.height(16.dp))
             }
             
             Spacer(Modifier.height(16.dp))

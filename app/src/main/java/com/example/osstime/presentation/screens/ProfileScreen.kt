@@ -51,9 +51,6 @@ fun ProfileScreen(navController: NavHostController) {
                         accelerometerY = event.values[1]
                         accelerometerZ = event.values[2]
                     }
-                    Sensor.TYPE_LIGHT -> {
-                        lightValue = event.values[0]
-                    }
                 }
             }
             

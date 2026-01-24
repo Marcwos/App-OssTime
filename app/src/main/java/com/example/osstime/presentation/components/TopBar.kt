@@ -8,12 +8,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopBar(
     onProfileClick: () -> Unit = {},
-    onMenuClick: () -> Unit = {}
+    onMenuClick: () -> Unit = {},
+    onLogoutClick: (() -> Unit)? = null
 ) {
     TopAppBar(
         title = { },
@@ -23,6 +25,14 @@ fun TopBar(
                     imageVector = Icons.Default.Person,
                     contentDescription = "Perfil"
                 )
+            }
+            if (onLogoutClick != null) {
+                IconButton(onClick = onLogoutClick) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                        contentDescription = "Cerrar sesión"
+                    )
+                }
             }
         },
         modifier = Modifier

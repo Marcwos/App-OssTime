@@ -1,28 +1,76 @@
 package com.example.osstime.presentation.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import coil.compose.AsyncImage
 import com.example.osstime.R
+import com.example.osstime.presentation.viewmodel.AuthNavigation
+import com.example.osstime.presentation.viewmodel.AuthUiState
+import com.example.osstime.presentation.viewmodel.AuthViewModel
 
 /**
- * LoginScreen optimizado
- * - Usa Coil para carga eficiente de imágenes
- * - Estados locales optimizados con remember
+ * LoginScreen con autenticación Firebase.
+ * - Valida credenciales con Firebase Auth
+ * - Navega según rol (Admin/Professor)
+ * - Muestra estado de aprobación pendiente
  */
 @Composable
-fun LoginScreen(navController: NavHostController) {
-    // Estados locales - solo se recrean cuando es necesario
+fun LoginScreen(
+    navController: NavHostController,
+    authViewModel: AuthViewModel
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
+    
+    val uiState by authViewModel.uiState.collectAsState()
+    val navigation by authViewModel.navigation.collectAsState()
+    
+    // Manejar navegación según rol
+    LaunchedEffect(navigation) {
+        when (navigation) {
+            is AuthNavigation.ToAdminHome -> {
+                navController.navigate("admin_home") {
+                    popUpTo("login") { inclusive = true }
+                }
+                authViewModel.clearNavigation()
+            }
+            is AuthNavigation.ToProfessorHome -> {
+                navController.navigate("home") {
+                    popUpTo("login") { inclusive = true }
+                }
+                authViewModel.clearNavigation()
+            }
+            is AuthNavigation.ToPendingApproval -> {
+                navController.navigate("pending_approval") {
+                    popUpTo("login") { inclusive = true }
+                }
+                authViewModel.clearNavigation()
+            }
+            is AuthNavigation.ToLogin -> {
+                // Ya estamos en login
+                authViewModel.clearNavigation()
+            }
+            AuthNavigation.None -> { /* No hacer nada */ }
+        }
+    }
+    
+    // Verificar si hay sesión activa al inicio
+    LaunchedEffect(Unit) {
+        authViewModel.checkCurrentUser()
+    }
 
     Box(
         modifier = Modifier
@@ -33,9 +81,7 @@ fun LoginScreen(navController: NavHostController) {
             modifier = Modifier.align(Alignment.Center),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Usar Coil para carga eficiente de imágenes (si fuera una URL)
-            // Por ahora mantenemos painterResource para recursos locales
-            // En producción, usar AsyncImage con Coil para imágenes de red
+            // Logo
             androidx.compose.foundation.Image(
                 painter = painterResource(id = R.drawable.oss_tiime_letra_negro),
                 contentDescription = "Logo de Oss Time",
@@ -43,34 +89,79 @@ fun LoginScreen(navController: NavHostController) {
                     .size(250.dp)
                     .padding(bottom = 24.dp)
             )
+            
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Campo Email
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
                 label = { Text("Correo electrónico") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                modifier = Modifier.fillMaxWidth(),
+                enabled = uiState !is AuthUiState.Loading
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Campo Contraseña con toggle de visibilidad
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Contraseña") },
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
+                            imageVector = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                            contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = uiState !is AuthUiState.Loading
             )
 
             Spacer(modifier = Modifier.height(24.dp))
+            
+            // Mostrar error si existe
+            if (uiState is AuthUiState.Error) {
+                Text(
+                    text = (uiState as AuthUiState.Error).message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
 
+            // Botón Iniciar Sesión
             Button(
-                onClick = { navController.navigate("home")},
-                modifier = Modifier.fillMaxWidth()
+                onClick = { 
+                    authViewModel.signIn(email.trim(), password)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = uiState !is AuthUiState.Loading && email.isNotBlank() && password.isNotBlank()
             ) {
-                Text("Iniciar sesión")
+                if (uiState is AuthUiState.Loading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("Iniciar sesión")
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Link para registrarse
+            TextButton(
+                onClick = { navController.navigate("register") }
+            ) {
+                Text("¿No tienes cuenta? Regístrate")
             }
         }
     }

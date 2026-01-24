@@ -1,5 +1,6 @@
 package com.example.osstime.data.repository
 
+import android.util.Log
 import com.example.osstime.data.firebase.FirebaseModule
 import com.example.osstime.domain.model.ClassSession
 import com.example.osstime.domain.repository.ClassRepository
@@ -11,12 +12,20 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
 /**
- * Implementación del repositorio de clases usando Firebase Firestore
+ * Implementación del repositorio de clases usando Firebase Firestore.
+ * Colección: classes
+ * 
+ * Actualizado para soportar nuevos campos: professorId, scheduleId
+ * Mantiene retrocompatibilidad con clases antiguas que no tienen estos campos.
  */
 class ClassRepositoryImpl : ClassRepository {
 
     private val firestore: FirebaseFirestore = FirebaseModule.getFirestore()
     private val classesCollection = firestore.collection("classes")
+    
+    companion object {
+        private const val TAG = "ClassRepository"
+    }
 
     override suspend fun getAllClasses(): List<ClassSession> {
         return try {
@@ -25,6 +34,7 @@ class ClassRepositoryImpl : ClassRepository {
                 doc.toClassSession()
             }
         } catch (e: Exception) {
+            Log.e(TAG, "Error al obtener clases", e)
             emptyList()
         }
     }
@@ -34,6 +44,7 @@ class ClassRepositoryImpl : ClassRepository {
             val doc = classesCollection.document(id).get().await()
             doc.toClassSession()
         } catch (e: Exception) {
+            Log.e(TAG, "Error al obtener clase: $id", e)
             null
         }
     }
@@ -42,7 +53,9 @@ class ClassRepositoryImpl : ClassRepository {
         try {
             val classMap = classSession.toMap()
             classesCollection.document(classSession.id).set(classMap).await()
+            Log.d(TAG, "Clase insertada: ${classSession.id}")
         } catch (e: Exception) {
+            Log.e(TAG, "Error al insertar clase", e)
             throw Exception("Error al insertar clase: ${e.message}")
         }
     }
@@ -51,7 +64,9 @@ class ClassRepositoryImpl : ClassRepository {
         try {
             val classMap = classSession.toMap()
             classesCollection.document(classSession.id).set(classMap).await()
+            Log.d(TAG, "Clase actualizada: ${classSession.id}")
         } catch (e: Exception) {
+            Log.e(TAG, "Error al actualizar clase", e)
             throw Exception("Error al actualizar clase: ${e.message}")
         }
     }
@@ -59,7 +74,9 @@ class ClassRepositoryImpl : ClassRepository {
     override suspend fun deleteClass(id: String) {
         try {
             classesCollection.document(id).delete().await()
+            Log.d(TAG, "Clase eliminada: $id")
         } catch (e: Exception) {
+            Log.e(TAG, "Error al eliminar clase", e)
             throw Exception("Error al eliminar clase: ${e.message}")
         }
     }
@@ -69,6 +86,7 @@ class ClassRepositoryImpl : ClassRepository {
             .orderBy("date", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
+                    Log.e(TAG, "Error observando clases", error)
                     close(error)
                     return@addSnapshotListener
                 }
@@ -84,9 +102,14 @@ class ClassRepositoryImpl : ClassRepository {
         awaitClose { listenerRegistration.remove() }
     }
 
-    // Extensiones para convertir entre ClassSession y Map/DocumentSnapshot
+    // ========== Extensiones para conversión ==========
+    
+    /**
+     * Convierte ClassSession a Map para Firestore.
+     * Incluye professorId y scheduleId solo si no son null.
+     */
     private fun ClassSession.toMap(): Map<String, Any> {
-        return mapOf(
+        val map = mutableMapOf<String, Any>(
             "id" to id,
             "name" to name,
             "type" to type,
@@ -94,8 +117,18 @@ class ClassRepositoryImpl : ClassRepository {
             "description" to description,
             "time" to time
         )
+        
+        // Agregar nuevos campos solo si tienen valor (retrocompatibilidad)
+        professorId?.let { map["professorId"] = it }
+        scheduleId?.let { map["scheduleId"] = it }
+        
+        return map
     }
 
+    /**
+     * Convierte DocumentSnapshot a ClassSession.
+     * Maneja clases antiguas que no tienen professorId/scheduleId (null).
+     */
     private fun com.google.firebase.firestore.DocumentSnapshot.toClassSession(): ClassSession? {
         return try {
             ClassSession(
@@ -104,9 +137,12 @@ class ClassRepositoryImpl : ClassRepository {
                 type = getString("type") ?: "",
                 date = getString("date") ?: "",
                 description = getString("description") ?: "",
-                time = getString("time") ?: ""
+                time = getString("time") ?: "",
+                professorId = getString("professorId"),  // Nuevo campo (nullable)
+                scheduleId = getString("scheduleId")      // Nuevo campo (nullable)
             )
         } catch (e: Exception) {
+            Log.e(TAG, "Error convirtiendo documento a ClassSession", e)
             null
         }
     }

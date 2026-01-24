@@ -16,12 +16,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.example.osstime.data.repository.AuthRepositoryImpl
 import com.example.osstime.data.repository.ClassRepositoryImpl
 import com.example.osstime.data.repository.StudentRepositoryImpl
 import com.example.osstime.presentation.components.TopBar
 import com.example.osstime.presentation.components.ClassSection
 import com.example.osstime.presentation.components.Title
 import com.example.osstime.presentation.components.BottomNavigationBar
+import com.example.osstime.presentation.viewmodel.AuthNavigation
+import com.example.osstime.presentation.viewmodel.AuthViewModel
 import com.example.osstime.presentation.viewmodel.HomeViewModel
 
 /**
@@ -36,6 +39,9 @@ fun HomeScreen(
     navController: NavHostController,
     viewModel: HomeViewModel = viewModel {
         HomeViewModel(ClassRepositoryImpl(), StudentRepositoryImpl())
+    },
+    authViewModel: AuthViewModel = viewModel {
+        AuthViewModel(AuthRepositoryImpl())
     }
 ) {
     // Estados del ViewModel - se actualizan automáticamente
@@ -44,13 +50,28 @@ fun HomeScreen(
     val upcomingClasses by viewModel.upcomingClasses.collectAsStateWithLifecycle()
     val recentStudents by viewModel.recentStudents.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val authNavigation by authViewModel.navigation.collectAsStateWithLifecycle()
+    
+    // Navegar al login cuando se cierra sesión
+    LaunchedEffect(authNavigation) {
+        if (authNavigation is AuthNavigation.ToLogin) {
+            authViewModel.clearNavigation()
+            navController.navigate("login") {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
 
     // Cálculo derivado - solo se recalcula cuando cambian las clases
     val hasTodayClasses = remember { derivedStateOf { todayClasses.isNotEmpty() } }
     val hasTomorrowClasses = remember { derivedStateOf { tomorrowClasses.isNotEmpty() } }
 
     Scaffold(
-        topBar = { TopBar() },
+        topBar = { 
+            TopBar(
+                onLogoutClick = { authViewModel.signOut() }
+            ) 
+        },
         bottomBar = { BottomNavigationBar(navController) }
     ) { padding ->
         LazyColumn(
