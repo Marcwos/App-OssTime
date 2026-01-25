@@ -11,7 +11,6 @@ interface ScheduleRepository {
     
     /**
      * Crea un nuevo horario.
-     * @throws Exception si hay solapamiento con otro horario
      */
     suspend fun createSchedule(schedule: Schedule)
     
@@ -36,23 +35,6 @@ interface ScheduleRepository {
     suspend fun getScheduleById(scheduleId: String): Schedule?
     
     /**
-     * Verifica si existe un horario que se solape con el rango dado.
-     * @param startDate Fecha inicio
-     * @param endDate Fecha fin
-     * @param startTime Hora inicio
-     * @param endTime Hora fin
-     * @param excludeScheduleId ID de horario a excluir (para edición)
-     * @return true si hay solapamiento
-     */
-    suspend fun hasOverlappingSchedule(
-        startDate: String,
-        endDate: String,
-        startTime: String,
-        endTime: String,
-        excludeScheduleId: String? = null
-    ): Boolean
-    
-    /**
      * Obtiene todos los horarios.
      */
     suspend fun getAllSchedules(): List<Schedule>
@@ -66,13 +48,6 @@ interface ScheduleRepository {
      * Obtiene horarios activos de un profesor.
      */
     suspend fun getActiveSchedulesByProfessor(professorId: String): List<Schedule>
-    
-    /**
-     * Obtiene horarios activos de un profesor que incluyan una fecha específica.
-     * @param professorId ID del profesor
-     * @param date Fecha a verificar (formato: "dd/MM/yyyy")
-     */
-    suspend fun getSchedulesForDate(professorId: String, date: String): List<Schedule>
     
     /**
      * Observa todos los horarios.

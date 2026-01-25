@@ -96,18 +96,26 @@ class CreateClassViewModel(
     /**
      * Crea una nueva clase.
      * 
+     * @param name Nombre de la clase
      * @param date Fecha de la clase (dd/MM/yyyy)
      * @param time Hora de la clase (h:mm AM/PM)
      * @param type Tipo de clase (GI/NOGI)
+     * @param description Descripción opcional
      * @param professorId UID del profesor (si está logueado como profesor)
      */
     fun createClass(
+        name: String,
         date: String,
         time: String,
         type: String,
+        description: String = "",
         professorId: String? = null
     ) {
         // Validaciones
+        if (name.isBlank()) {
+            _uiState.value = CreateClassUiState.Error("Ingrese el nombre de la clase")
+            return
+        }
         if (date.isBlank()) {
             _uiState.value = CreateClassUiState.Error("Seleccione una fecha")
             return
@@ -128,23 +136,13 @@ class CreateClassViewModel(
             try {
                 val selectedSch = _selectedSchedule.value
                 
-                // Validar que la fecha esté dentro del rango del horario seleccionado
-                if (selectedSch != null) {
-                    if (!isDateWithinScheduleRange(date, selectedSch)) {
-                        _uiState.value = CreateClassUiState.Error(
-                            "La fecha debe estar dentro del rango del horario: ${selectedSch.startDate} - ${selectedSch.endDate}"
-                        )
-                        _isSaving.value = false
-                        return@launch
-                    }
-                }
-                
                 val classSession = ClassSession(
                     id = UUID.randomUUID().toString(),
-                    name = "", // Se llena desde CreateClassFormScreen
+                    name = name.trim(),
                     date = date,
                     time = time,
                     type = type,
+                    description = description.trim(),
                     professorId = professorId,
                     scheduleId = selectedSch?.id
                 )
@@ -160,23 +158,6 @@ class CreateClassViewModel(
             } finally {
                 _isSaving.value = false
             }
-        }
-    }
-    
-    /**
-     * Valida que la fecha de la clase esté dentro del rango del horario.
-     */
-    private fun isDateWithinScheduleRange(classDate: String, schedule: Schedule): Boolean {
-        return try {
-            val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-            val classParsed = dateFormat.parse(classDate) ?: return false
-            val startParsed = dateFormat.parse(schedule.startDate) ?: return false
-            val endParsed = dateFormat.parse(schedule.endDate) ?: return false
-            
-            classParsed >= startParsed && classParsed <= endParsed
-        } catch (e: Exception) {
-            Log.e(TAG, "Error parseando fechas", e)
-            true // Si hay error en parseo, permitir (el admin corregirá)
         }
     }
     

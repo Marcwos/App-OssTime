@@ -33,19 +33,6 @@ class ScheduleRepositoryImpl : ScheduleRepository {
     
     override suspend fun createSchedule(schedule: Schedule) {
         try {
-            // Validar solapamiento antes de crear
-            val hasOverlap = hasOverlappingSchedule(
-                startDate = schedule.startDate,
-                endDate = schedule.endDate,
-                startTime = schedule.startTime,
-                endTime = schedule.endTime,
-                excludeScheduleId = null
-            )
-            
-            if (hasOverlap) {
-                throw Exception("Ya existe un horario que se solapa con el rango de fecha/hora seleccionado")
-            }
-            
             schedulesCollection.document(schedule.id).set(schedule.toMap()).await()
             Log.d(TAG, "Horario creado: ${schedule.id}")
         } catch (e: Exception) {
@@ -56,19 +43,6 @@ class ScheduleRepositoryImpl : ScheduleRepository {
     
     override suspend fun updateSchedule(schedule: Schedule) {
         try {
-            // Validar solapamiento excluyendo el horario actual
-            val hasOverlap = hasOverlappingSchedule(
-                startDate = schedule.startDate,
-                endDate = schedule.endDate,
-                startTime = schedule.startTime,
-                endTime = schedule.endTime,
-                excludeScheduleId = schedule.id
-            )
-            
-            if (hasOverlap) {
-                throw Exception("Ya existe un horario que se solapa con el rango de fecha/hora seleccionado")
-            }
-            
             schedulesCollection.document(schedule.id).set(schedule.toMap()).await()
             Log.d(TAG, "Horario actualizado: ${schedule.id}")
         } catch (e: Exception) {
@@ -104,73 +78,6 @@ class ScheduleRepositoryImpl : ScheduleRepository {
         } catch (e: Exception) {
             Log.e(TAG, "Error al obtener horario: $scheduleId", e)
             null
-        }
-    }
-    
-    /**
-     * Verifica si existe un horario que se solape con el rango dado.
-     * 
-     * Lógica de solapamiento:
-     * - Dos rangos de fecha se solapan si: startDate1 <= endDate2 AND endDate1 >= startDate2
-     * - Dos rangos de hora se solapan si: startTime1 < endTime2 AND endTime1 > startTime2
-     * 
-     * Para simplificar la validación en Firestore (que no soporta queries complejas),
-     * obtenemos todos los horarios activos y validamos en memoria.
-     */
-    override suspend fun hasOverlappingSchedule(
-        startDate: String,
-        endDate: String,
-        startTime: String,
-        endTime: String,
-        excludeScheduleId: String?
-    ): Boolean {
-        return try {
-            val allSchedules = schedulesCollection
-                .whereEqualTo("active", true)
-                .get()
-                .await()
-                .documents
-                .mapNotNull { it.toSchedule() }
-                .filter { it.id != excludeScheduleId }
-            
-            // Convertir fechas y horas para comparación
-            val newStartDate = parseDate(startDate)
-            val newEndDate = parseDate(endDate)
-            val newStartTime = parseTime(startTime)
-            val newEndTime = parseTime(endTime)
-            
-            if (newStartDate == null || newEndDate == null || newStartTime == null || newEndTime == null) {
-                Log.e(TAG, "Error parseando fechas/horas del nuevo horario")
-                return false
-            }
-            
-            for (existing in allSchedules) {
-                val existingStartDate = parseDate(existing.startDate)
-                val existingEndDate = parseDate(existing.endDate)
-                val existingStartTime = parseTime(existing.startTime)
-                val existingEndTime = parseTime(existing.endTime)
-                
-                if (existingStartDate == null || existingEndDate == null || 
-                    existingStartTime == null || existingEndTime == null) {
-                    continue
-                }
-                
-                // Verificar solapamiento de fechas
-                val datesOverlap = newStartDate <= existingEndDate && newEndDate >= existingStartDate
-                
-                // Verificar solapamiento de horas (solo si las fechas se solapan)
-                val timesOverlap = newStartTime < existingEndTime && newEndTime > existingStartTime
-                
-                if (datesOverlap && timesOverlap) {
-                    Log.d(TAG, "Solapamiento detectado con horario: ${existing.id}")
-                    return true
-                }
-            }
-            
-            false
-        } catch (e: Exception) {
-            Log.e(TAG, "Error verificando solapamiento", e)
-            false
         }
     }
     
@@ -210,28 +117,6 @@ class ScheduleRepositoryImpl : ScheduleRepository {
             snapshot.documents.mapNotNull { it.toSchedule() }
         } catch (e: Exception) {
             Log.e(TAG, "Error al obtener horarios activos del profesor: $professorId", e)
-            emptyList()
-        }
-    }
-    
-    override suspend fun getSchedulesForDate(professorId: String, date: String): List<Schedule> {
-        return try {
-            val targetDate = parseDate(date) ?: return emptyList()
-            
-            val allSchedules = getActiveSchedulesByProfessor(professorId)
-            
-            allSchedules.filter { schedule ->
-                val startDate = parseDate(schedule.startDate)
-                val endDate = parseDate(schedule.endDate)
-                
-                if (startDate != null && endDate != null) {
-                    targetDate >= startDate && targetDate <= endDate
-                } else {
-                    false
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error al obtener horarios para fecha: $date", e)
             emptyList()
         }
     }
@@ -314,11 +199,8 @@ class ScheduleRepositoryImpl : ScheduleRepository {
             "id" to id,
             "professorId" to professorId,
             "professorName" to professorName,
-            "startDate" to startDate,
-            "endDate" to endDate,
             "startTime" to startTime,
             "endTime" to endTime,
-            "type" to type,
             "active" to active,
             "createdAt" to createdAt,
             "createdBy" to createdBy
@@ -327,15 +209,22 @@ class ScheduleRepositoryImpl : ScheduleRepository {
     
     private fun com.google.firebase.firestore.DocumentSnapshot.toSchedule(): Schedule? {
         return try {
+            // Leer campos (compatibilidad con documentos antiguos y nuevos)
+            val startTime = getString("startTime") ?: ""
+            val endTime = getString("endTime") ?: ""
+            
+            // Si no hay startTime, probablemente es un documento antiguo - ignorarlo
+            if (startTime.isEmpty() || endTime.isEmpty()) {
+                Log.w(TAG, "Documento antiguo encontrado (sin startTime/endTime): $id - será ignorado")
+                return null
+            }
+            
             Schedule(
                 id = getString("id") ?: id,
                 professorId = getString("professorId") ?: "",
                 professorName = getString("professorName") ?: "",
-                startDate = getString("startDate") ?: "",
-                endDate = getString("endDate") ?: "",
-                startTime = getString("startTime") ?: "",
-                endTime = getString("endTime") ?: "",
-                type = getString("type") ?: "GI",
+                startTime = startTime,
+                endTime = endTime,
                 active = getBoolean("active") ?: true,
                 createdAt = getLong("createdAt") ?: 0L,
                 createdBy = getString("createdBy") ?: ""

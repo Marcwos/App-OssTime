@@ -71,7 +71,7 @@ fun ManageSchedulesScreen(
             onDismissRequest = { scheduleToDelete = null },
             title = { Text("Eliminar Horario") },
             text = { 
-                Text("¿Estás seguro de que deseas eliminar el horario de ${scheduleToDelete?.professorName}?\n\n${scheduleToDelete?.startDate} - ${scheduleToDelete?.endDate}")
+                Text("¿Estás seguro de que deseas eliminar el horario de ${scheduleToDelete?.professorName}?\n\n${scheduleToDelete?.startTime} - ${scheduleToDelete?.endTime}")
             },
             confirmButton = {
                 Button(
@@ -104,15 +104,12 @@ fun ManageSchedulesScreen(
                 showCreateDialog = false
                 viewModel.resetState()
             },
-            onCreate = { professorId, professorName, startDate, endDate, startTime, endTime, type ->
+            onCreate = { professorId, professorName, startTime, endTime ->
                 viewModel.createSchedule(
                     professorId = professorId,
                     professorName = professorName,
-                    startDate = startDate,
-                    endDate = endDate,
                     startTime = startTime,
                     endTime = endTime,
-                    type = type,
                     createdBy = currentUserId
                 )
             }
@@ -216,83 +213,44 @@ private fun ScheduleCard(
     Card(
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = schedule.professorName,
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.CalendarMonth,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "${schedule.startDate} - ${schedule.endDate}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Schedule,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "${schedule.startTime} - ${schedule.endTime}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                
-                Column(
-                    horizontalAlignment = Alignment.End
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = schedule.professorName,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Badge(
-                        containerColor = if (schedule.type == "GI") 
-                            MaterialTheme.colorScheme.primaryContainer 
-                        else 
-                            MaterialTheme.colorScheme.tertiaryContainer
-                    ) {
-                        Text(
-                            text = schedule.type,
-                            color = if (schedule.type == "GI") 
-                                MaterialTheme.colorScheme.onPrimaryContainer 
-                            else 
-                                MaterialTheme.colorScheme.onTertiaryContainer
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    IconButton(onClick = onDelete) {
-                        Icon(
-                            imageVector = Icons.Filled.Delete,
-                            contentDescription = "Eliminar",
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Filled.Schedule,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "${schedule.startTime} - ${schedule.endTime}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
+            }
+            
+            IconButton(onClick = onDelete) {
+                Icon(
+                    imageVector = Icons.Filled.Delete,
+                    contentDescription = "Eliminar",
+                    tint = MaterialTheme.colorScheme.error
+                )
             }
         }
     }
@@ -305,78 +263,17 @@ private fun CreateScheduleDialog(
     isSaving: Boolean,
     errorMessage: String?,
     onDismiss: () -> Unit,
-    onCreate: (String, String, String, String, String, String, String) -> Unit
+    onCreate: (String, String, String, String) -> Unit
 ) {
     var selectedProfessor by remember { mutableStateOf<User?>(null) }
     var professorDropdownExpanded by remember { mutableStateOf(false) }
     
-    var startDate by remember { mutableStateOf("") }
-    var endDate by remember { mutableStateOf("") }
     var startTime by remember { mutableStateOf("") }
     var endTime by remember { mutableStateOf("") }
-    var selectedType by remember { mutableStateOf("GI") }
     
-    // Date pickers
-    var showStartDatePicker by remember { mutableStateOf(false) }
-    var showEndDatePicker by remember { mutableStateOf(false) }
+    // Time pickers
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
-    
-    val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
-    
-    // Start Date Picker
-    if (showStartDatePicker) {
-        val datePickerState = rememberDatePickerState()
-        DatePickerDialog(
-            onDismissRequest = { showStartDatePicker = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        datePickerState.selectedDateMillis?.let {
-                            startDate = dateFormatter.format(it)
-                        }
-                        showStartDatePicker = false
-                    }
-                ) {
-                    Text("Aceptar")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showStartDatePicker = false }) {
-                    Text("Cancelar")
-                }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
-    }
-    
-    // End Date Picker
-    if (showEndDatePicker) {
-        val datePickerState = rememberDatePickerState()
-        DatePickerDialog(
-            onDismissRequest = { showEndDatePicker = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        datePickerState.selectedDateMillis?.let {
-                            endDate = dateFormatter.format(it)
-                        }
-                        showEndDatePicker = false
-                    }
-                ) {
-                    Text("Aceptar")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showEndDatePicker = false }) {
-                    Text("Cancelar")
-                }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
-    }
     
     // Start Time Picker
     if (showStartTimePicker) {
@@ -488,39 +385,6 @@ private fun CreateScheduleDialog(
                     }
                 }
                 
-                // Fechas
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedTextField(
-                        value = startDate,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Fecha inicio") },
-                        modifier = Modifier
-                            .weight(1f),
-                        trailingIcon = {
-                            IconButton(onClick = { showStartDatePicker = true }) {
-                                Icon(Icons.Filled.CalendarMonth, "Seleccionar fecha")
-                            }
-                        }
-                    )
-                    OutlinedTextField(
-                        value = endDate,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Fecha fin") },
-                        modifier = Modifier
-                            .weight(1f),
-                        trailingIcon = {
-                            IconButton(onClick = { showEndDatePicker = true }) {
-                                Icon(Icons.Filled.CalendarMonth, "Seleccionar fecha")
-                            }
-                        }
-                    )
-                }
-                
                 // Horas
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -554,27 +418,6 @@ private fun CreateScheduleDialog(
                     )
                 }
                 
-                // Tipo de clase
-                Text(
-                    text = "Tipo de clase",
-                    style = MaterialTheme.typography.labelMedium
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    FilterChip(
-                        selected = selectedType == "GI",
-                        onClick = { selectedType = "GI" },
-                        label = { Text("GI") }
-                    )
-                    FilterChip(
-                        selected = selectedType == "NOGI",
-                        onClick = { selectedType = "NOGI" },
-                        label = { Text("NOGI") }
-                    )
-                }
-                
                 // Mensaje de error
                 if (errorMessage != null) {
                     Card(
@@ -600,18 +443,13 @@ private fun CreateScheduleDialog(
                         onCreate(
                             professor.uid,
                             professor.displayName,
-                            startDate,
-                            endDate,
                             startTime,
-                            endTime,
-                            selectedType
+                            endTime
                         )
                     }
                 },
                 enabled = !isSaving && 
                          selectedProfessor != null && 
-                         startDate.isNotBlank() && 
-                         endDate.isNotBlank() && 
                          startTime.isNotBlank() && 
                          endTime.isNotBlank()
             ) {

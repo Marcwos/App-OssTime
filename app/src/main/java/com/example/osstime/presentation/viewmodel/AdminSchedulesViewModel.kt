@@ -92,25 +92,20 @@ class AdminSchedulesViewModel(
     
     /**
      * Crea un nuevo horario.
-     * Valida que no haya solapamiento antes de crear.
+     * Solo define horas de inicio y fin para un profesor.
+     * El profesor elegirá las fechas y tipo cuando cree sus clases.
      * 
      * @param professorId ID del profesor
      * @param professorName Nombre del profesor (para mostrar)
-     * @param startDate Fecha inicio (dd/MM/yyyy)
-     * @param endDate Fecha fin (dd/MM/yyyy)
      * @param startTime Hora inicio (h:mm AM/PM)
      * @param endTime Hora fin (h:mm AM/PM)
-     * @param type Tipo de clase (GI/NOGI)
      * @param createdBy UID del admin que crea el horario
      */
     fun createSchedule(
         professorId: String,
         professorName: String,
-        startDate: String,
-        endDate: String,
         startTime: String,
         endTime: String,
-        type: String,
         createdBy: String
     ) {
         // Validaciones básicas
@@ -118,16 +113,8 @@ class AdminSchedulesViewModel(
             _uiState.value = SchedulesUiState.Error("Seleccione un profesor")
             return
         }
-        if (startDate.isBlank() || endDate.isBlank()) {
-            _uiState.value = SchedulesUiState.Error("Seleccione las fechas")
-            return
-        }
         if (startTime.isBlank() || endTime.isBlank()) {
             _uiState.value = SchedulesUiState.Error("Seleccione las horas")
-            return
-        }
-        if (type.isBlank()) {
-            _uiState.value = SchedulesUiState.Error("Seleccione el tipo de clase")
             return
         }
         
@@ -140,17 +127,13 @@ class AdminSchedulesViewModel(
                     id = java.util.UUID.randomUUID().toString(),
                     professorId = professorId,
                     professorName = professorName,
-                    startDate = startDate,
-                    endDate = endDate,
                     startTime = startTime,
                     endTime = endTime,
-                    type = type,
                     active = true,
                     createdAt = System.currentTimeMillis(),
                     createdBy = createdBy
                 )
                 
-                // El repositorio validará el solapamiento internamente
                 scheduleRepository.createSchedule(schedule)
                 
                 Log.d(TAG, "Horario creado: ${schedule.id}")
