@@ -19,15 +19,21 @@ import androidx.navigation.NavHostController
 import com.example.osstime.data.repository.AuthRepositoryImpl
 import com.example.osstime.data.repository.ClassRepositoryImpl
 import com.example.osstime.data.repository.StudentRepositoryImpl
+import com.example.osstime.data.repository.TournamentRepositoryImpl
 import com.example.osstime.presentation.components.TopBar
 import com.example.osstime.presentation.components.ClassSection
 import com.example.osstime.presentation.components.Title
 import com.example.osstime.presentation.components.BottomNavigationBar
+import com.example.osstime.presentation.components.TournamentCard
 import com.example.osstime.presentation.viewmodel.AuthNavigation
 import com.example.osstime.presentation.viewmodel.AuthViewModel
 import com.example.osstime.presentation.viewmodel.HomeViewModel
+import com.example.osstime.presentation.viewmodel.TournamentViewModel
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 /**
  * HomeScreen optimizado con ViewModel y manejo eficiente de estados
@@ -44,6 +50,9 @@ fun HomeScreen(
     },
     authViewModel: AuthViewModel = viewModel {
         AuthViewModel(AuthRepositoryImpl())
+    },
+    tournamentViewModel: TournamentViewModel = viewModel {
+        TournamentViewModel(TournamentRepositoryImpl())
     }
 ) {
     // Estados del ViewModel - se actualizan automáticamente
@@ -53,6 +62,7 @@ fun HomeScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val authNavigation by authViewModel.navigation.collectAsStateWithLifecycle()
     val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
+    val upcomingTournaments by tournamentViewModel.upcomingTournaments.collectAsStateWithLifecycle()
     
     // Navegar al login cuando se cierra sesión
     LaunchedEffect(authNavigation) {
@@ -108,8 +118,13 @@ fun HomeScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(Modifier.height(8.dp))
+                            val todayFormatted = remember {
+                                val calendar = Calendar.getInstance()
+                                val dateFormat = SimpleDateFormat("EEEE d/MM/yy", Locale("es", "ES"))
+                                dateFormat.format(calendar.time).replaceFirstChar { it.uppercase() }
+                            }
                             Text(
-                                text = "Jueves 7/12/25",
+                                text = todayFormatted,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -146,8 +161,14 @@ fun HomeScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(Modifier.height(8.dp))
+                            val tomorrowFormatted = remember {
+                                val calendar = Calendar.getInstance()
+                                calendar.add(Calendar.DAY_OF_YEAR, 1)
+                                val dateFormat = SimpleDateFormat("EEEE d/MM/yy", Locale("es", "ES"))
+                                dateFormat.format(calendar.time).replaceFirstChar { it.uppercase() }
+                            }
                             Text(
-                                text = "Viernes 8/12/25",
+                                text = tomorrowFormatted,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -211,6 +232,20 @@ fun HomeScreen(
                     }
                 }
 
+                // Torneos Próximos
+                if (upcomingTournaments.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = "Torneos Próximos",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    
+                    items(upcomingTournaments.take(2)) { tournament ->
+                        TournamentCard(tournament = tournament)
+                    }
+                }
 
             }
         }
@@ -223,6 +258,13 @@ fun UpcomingClassCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Color del badge según el tipo
+    val typeColor = when (classSession.type.uppercase()) {
+        "NOGI" -> androidx.compose.ui.graphics.Color(0xFFB7CB76)
+        "GI" -> androidx.compose.ui.graphics.Color(0xFF8AB5FF)
+        else -> MaterialTheme.colorScheme.primary
+    }
+    
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
@@ -237,13 +279,38 @@ fun UpcomingClassCard(
                 .padding(16.dp)
                 .fillMaxWidth()
         ) {
-            Text(
-                text = classSession.name,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            // Fila superior: Nombre de la clase y tipo (GI/NOGI)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = classSession.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+                
+                // Badge del tipo (GI/NOGI)
+                if (classSession.type.isNotEmpty()) {
+                    Surface(
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                        color = typeColor
+                    ) {
+                        Text(
+                            text = classSession.type.uppercase(),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = androidx.compose.ui.graphics.Color.White,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            }
             
+            // Descripción
             if (classSession.description.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -253,25 +320,14 @@ fun UpcomingClassCard(
                 )
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
+            // Hora (sin fecha)
+            if (classSession.time.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = classSession.date,
+                    text = classSession.time,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
                 )
-                
-                if (classSession.time.isNotEmpty()) {
-                    Text(
-                        text = classSession.time,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
             }
         }
     }

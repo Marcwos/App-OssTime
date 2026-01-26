@@ -12,6 +12,7 @@ import com.example.osstime.data.firebase.FirebaseModule
 import com.example.osstime.data.repository.AuthRepositoryImpl
 import com.example.osstime.data.repository.ClassRepositoryImpl
 import com.example.osstime.data.repository.ScheduleRepositoryImpl
+import com.example.osstime.data.repository.TournamentRepositoryImpl
 import com.example.osstime.data.repository.UserRepositoryImpl
 import com.example.osstime.domain.model.ClassSession
 import java.net.URLDecoder
@@ -28,6 +29,8 @@ import com.example.osstime.presentation.screens.CreateClassFormScreen
 import com.example.osstime.presentation.screens.CreateStudentScreen
 import com.example.osstime.presentation.screens.ProfileScreen
 import com.example.osstime.presentation.screens.ClassDetailScreen
+import com.example.osstime.presentation.screens.TorneosScreen
+import com.example.osstime.presentation.screens.CreateTournamentScreen
 import com.example.osstime.presentation.screens.admin.AdminHomeScreen
 import com.example.osstime.presentation.screens.admin.ManageProfessorsScreen
 import com.example.osstime.presentation.screens.admin.ManageSchedulesScreen
@@ -35,6 +38,7 @@ import com.example.osstime.presentation.viewmodel.AdminProfessorsViewModel
 import com.example.osstime.presentation.viewmodel.AdminSchedulesViewModel
 import com.example.osstime.presentation.viewmodel.AuthViewModel
 import com.example.osstime.presentation.viewmodel.CreateClassViewModel
+import com.example.osstime.presentation.viewmodel.TournamentViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -46,6 +50,7 @@ fun NavGraph(navController: NavHostController) {
     val scheduleRepository = remember { ScheduleRepositoryImpl() }
     val authRepository = remember { AuthRepositoryImpl() }
     val classRepository = remember { ClassRepositoryImpl() }
+    val tournamentRepository = remember { TournamentRepositoryImpl() }
     
     // Crear admin por defecto si no existe
     LaunchedEffect(Unit) {
@@ -57,6 +62,7 @@ fun NavGraph(navController: NavHostController) {
     val professorsViewModel = remember { AdminProfessorsViewModel(userRepository) }
     val schedulesViewModel = remember { AdminSchedulesViewModel(scheduleRepository, userRepository) }
     val createClassViewModel = remember { CreateClassViewModel(classRepository, scheduleRepository) }
+    val tournamentViewModel = remember { TournamentViewModel(tournamentRepository) }
     
     // Obtener auth para el userId actual
     val auth = remember { FirebaseModule.getAuth() }
@@ -194,6 +200,22 @@ fun NavGraph(navController: NavHostController) {
             )
             
             ClassDetailScreen(navController, classSession)
+        }
+        
+        // ===== TOURNAMENT ROUTES =====
+        composable("torneos") { 
+            TorneosScreen(
+                navController = navController,
+                viewModel = tournamentViewModel
+            ) 
+        }
+        
+        composable("create_tournament") { 
+            CreateTournamentScreen(
+                navController = navController,
+                viewModel = tournamentViewModel,
+                professorId = auth.currentUser?.uid
+            ) 
         }
         
         composable("profile") { ProfileScreen(navController) }

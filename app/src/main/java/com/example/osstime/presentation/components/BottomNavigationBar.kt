@@ -2,8 +2,8 @@ package com.example.osstime.presentation.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -57,12 +57,12 @@ fun BottomNavigationBar(navController: NavHostController) {
             }
         )
         NavigationBarItem(
-            icon = { Icon(Icons.Default.Settings, contentDescription = "Sensor") },
-            label = { Text("Sensor") },
-            selected = currentRoute == "profile",
+            icon = { Icon(Icons.Default.EmojiEvents, contentDescription = "Torneos") },
+            label = { Text("Torneos") },
+            selected = currentRoute == "torneos",
             onClick = {
-                if (currentRoute != "profile") {
-                    navController.navigate("profile") {
+                if (currentRoute != "torneos") {
+                    navController.navigate("torneos") {
                         popUpTo("home") { inclusive = false }
                     }
                 }
