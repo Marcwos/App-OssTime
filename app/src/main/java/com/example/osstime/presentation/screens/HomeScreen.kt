@@ -26,6 +26,8 @@ import com.example.osstime.presentation.components.BottomNavigationBar
 import com.example.osstime.presentation.viewmodel.AuthNavigation
 import com.example.osstime.presentation.viewmodel.AuthViewModel
 import com.example.osstime.presentation.viewmodel.HomeViewModel
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 /**
  * HomeScreen optimizado con ViewModel y manejo eficiente de estados
@@ -48,9 +50,9 @@ fun HomeScreen(
     val todayClasses by viewModel.todayClasses.collectAsStateWithLifecycle()
     val tomorrowClasses by viewModel.tomorrowClasses.collectAsStateWithLifecycle()
     val upcomingClasses by viewModel.upcomingClasses.collectAsStateWithLifecycle()
-    val recentStudents by viewModel.recentStudents.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val authNavigation by authViewModel.navigation.collectAsStateWithLifecycle()
+    val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
     
     // Navegar al login cuando se cierra sesión
     LaunchedEffect(authNavigation) {
@@ -82,7 +84,7 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item {
-                Title(text = "Hola Profesor Danager!")
+                Title(text = "Hola ${currentUser?.displayName ?: "Profesor"}!")
             }
 
             // Mostrar loading solo si es necesario
@@ -118,10 +120,16 @@ fun HomeScreen(
                         UpcomingClassCard(
                             classSession = classSession,
                             onClick = {
+                                val encodedId = URLEncoder.encode(classSession.id, StandardCharsets.UTF_8.toString())
+                                val encodedName = URLEncoder.encode(classSession.name, StandardCharsets.UTF_8.toString())
+                                val encodedType = URLEncoder.encode(classSession.type, StandardCharsets.UTF_8.toString())
+                                val encodedDate = URLEncoder.encode(classSession.date, StandardCharsets.UTF_8.toString())
+                                val description = if (classSession.description.isBlank()) "_" else classSession.description
+                                val time = if (classSession.time.isBlank()) "_" else classSession.time
+                                val encodedDescription = URLEncoder.encode(description, StandardCharsets.UTF_8.toString())
+                                val encodedTime = URLEncoder.encode(time, StandardCharsets.UTF_8.toString())
                                 navController.navigate(
-                                    "class_detail/${classSession.id}/${classSession.name}/" +
-                                    "${classSession.description.ifEmpty { "_" }}/" +
-                                    "${classSession.date}/${classSession.time.ifEmpty { "_" }}"
+                                    "class_detail/$encodedId/$encodedName/$encodedType/$encodedDate/$encodedDescription/$encodedTime"
                                 )
                             }
                         )
@@ -150,10 +158,16 @@ fun HomeScreen(
                         UpcomingClassCard(
                             classSession = classSession,
                             onClick = {
+                                val encodedId = URLEncoder.encode(classSession.id, StandardCharsets.UTF_8.toString())
+                                val encodedName = URLEncoder.encode(classSession.name, StandardCharsets.UTF_8.toString())
+                                val encodedType = URLEncoder.encode(classSession.type, StandardCharsets.UTF_8.toString())
+                                val encodedDate = URLEncoder.encode(classSession.date, StandardCharsets.UTF_8.toString())
+                                val description = if (classSession.description.isBlank()) "_" else classSession.description
+                                val time = if (classSession.time.isBlank()) "_" else classSession.time
+                                val encodedDescription = URLEncoder.encode(description, StandardCharsets.UTF_8.toString())
+                                val encodedTime = URLEncoder.encode(time, StandardCharsets.UTF_8.toString())
                                 navController.navigate(
-                                    "class_detail/${classSession.id}/${classSession.name}/" +
-                                    "${classSession.description.ifEmpty { "_" }}/" +
-                                    "${classSession.date}/${classSession.time.ifEmpty { "_" }}"
+                                    "class_detail/$encodedId/$encodedName/$encodedType/$encodedDate/$encodedDescription/$encodedTime"
                                 )
                             }
                         )
@@ -178,10 +192,16 @@ fun HomeScreen(
                                 UpcomingClassCard(
                                     classSession = classSession,
                                     onClick = {
+                                        val encodedId = URLEncoder.encode(classSession.id, StandardCharsets.UTF_8.toString())
+                                        val encodedName = URLEncoder.encode(classSession.name, StandardCharsets.UTF_8.toString())
+                                        val encodedType = URLEncoder.encode(classSession.type, StandardCharsets.UTF_8.toString())
+                                        val encodedDate = URLEncoder.encode(classSession.date, StandardCharsets.UTF_8.toString())
+                                        val description = if (classSession.description.isBlank()) "_" else classSession.description
+                                        val time = if (classSession.time.isBlank()) "_" else classSession.time
+                                        val encodedDescription = URLEncoder.encode(description, StandardCharsets.UTF_8.toString())
+                                        val encodedTime = URLEncoder.encode(time, StandardCharsets.UTF_8.toString())
                                         navController.navigate(
-                                            "class_detail/${classSession.id}/${classSession.name}/" +
-                                            "${classSession.description.ifEmpty { "_" }}/" +
-                                            "${classSession.date}/${classSession.time.ifEmpty { "_" }}"
+                                            "class_detail/$encodedId/$encodedName/$encodedType/$encodedDate/$encodedDescription/$encodedTime"
                                         )
                                     },
                                     modifier = Modifier.width(280.dp)
@@ -191,20 +211,7 @@ fun HomeScreen(
                     }
                 }
 
-                // Estudiantes recientes
-                if (recentStudents.isNotEmpty()) {
-                    item {
-                        Text(
-                            text = "Estudiantes Recientes",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    
-                    items(recentStudents) { student ->
-                        RecentStudentItem(student = student)
-                    }
-                }
+
             }
         }
     }
