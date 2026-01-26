@@ -142,6 +142,11 @@ fun TorneosScreen(
                     items(tournaments, key = { it.id }) { tournament ->
                         TournamentListItem(tournament = tournament)
                     }
+                    
+                    // Espacio al final para scroll
+                    item {
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
                 }
             }
         }

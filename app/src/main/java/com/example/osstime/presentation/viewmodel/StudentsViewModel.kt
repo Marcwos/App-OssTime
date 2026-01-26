@@ -50,10 +50,32 @@ class StudentsViewModel(
                 }
                 .collect { studentList ->
                     Log.d("StudentsViewModel", "Estudiantes recibidos: ${studentList.size}")
-                    _students.value = studentList
-                    _studentCount.value = studentList.size
+                    // Ordenar por cinturón: Negro, Marrón, Morado, Azul, Verde, Blanco
+                    val sortedStudents = studentList.sortedBy { student ->
+                        getBeltOrder(student.belt)
+                    }
+                    _students.value = sortedStudents
+                    _studentCount.value = sortedStudents.size
                     _isLoading.value = false
                 }
+        }
+    }
+    
+    /**
+     * Retorna el orden de prioridad de los cinturones
+     * Menor número = mayor rango
+     */
+    private fun getBeltOrder(belt: String): Int {
+        return when (belt.lowercase()) {
+            "negro" -> 1
+            "marrón", "marron", "café" -> 2
+            "morado", "púrpura", "purpura" -> 3
+            "azul" -> 4
+            "verde" -> 5
+            "blanco" -> 6
+            "amarillo" -> 7
+            "naranja" -> 8
+            else -> 9 // Cualquier otro cinturón va al final
         }
     }
 

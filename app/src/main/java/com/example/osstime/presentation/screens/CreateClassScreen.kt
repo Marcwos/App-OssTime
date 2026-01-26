@@ -137,6 +137,11 @@ fun CreateClassScreen(
                             navController = navController
                         )
                     }
+                    
+                    // Espacio al final para scroll
+                    item {
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
                 }
             }
         }

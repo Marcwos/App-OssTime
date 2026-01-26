@@ -151,100 +151,25 @@ fun HomeScreen(
                     }
                 }
 
-                // Clases de mañana
-                if (hasTomorrowClasses.value) {
-                    item {
-                        Column {
-                            Text(
-                                text = "Clases del día de mañana",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            val tomorrowFormatted = remember {
-                                val calendar = Calendar.getInstance()
-                                calendar.add(Calendar.DAY_OF_YEAR, 1)
-                                val dateFormat = SimpleDateFormat("EEEE d/MM/yy", Locale("es", "ES"))
-                                dateFormat.format(calendar.time).replaceFirstChar { it.uppercase() }
-                            }
-                            Text(
-                                text = tomorrowFormatted,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    
-                    items(tomorrowClasses) { classSession ->
-                        UpcomingClassCard(
-                            classSession = classSession,
-                            onClick = {
-                                val encodedId = URLEncoder.encode(classSession.id, StandardCharsets.UTF_8.toString())
-                                val encodedName = URLEncoder.encode(classSession.name, StandardCharsets.UTF_8.toString())
-                                val encodedType = URLEncoder.encode(classSession.type, StandardCharsets.UTF_8.toString())
-                                val encodedDate = URLEncoder.encode(classSession.date, StandardCharsets.UTF_8.toString())
-                                val description = if (classSession.description.isBlank()) "_" else classSession.description
-                                val time = if (classSession.time.isBlank()) "_" else classSession.time
-                                val encodedDescription = URLEncoder.encode(description, StandardCharsets.UTF_8.toString())
-                                val encodedTime = URLEncoder.encode(time, StandardCharsets.UTF_8.toString())
-                                navController.navigate(
-                                    "class_detail/$encodedId/$encodedName/$encodedType/$encodedDate/$encodedDescription/$encodedTime"
-                                )
-                            }
-                        )
-                    }
-                }
-
-                // Clases próximas
-                if (upcomingClasses.isNotEmpty()) {
-                    item {
-                        Text(
-                            text = "Clases Próximas",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    
-                    item {
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            items(upcomingClasses) { classSession ->
-                                UpcomingClassCard(
-                                    classSession = classSession,
-                                    onClick = {
-                                        val encodedId = URLEncoder.encode(classSession.id, StandardCharsets.UTF_8.toString())
-                                        val encodedName = URLEncoder.encode(classSession.name, StandardCharsets.UTF_8.toString())
-                                        val encodedType = URLEncoder.encode(classSession.type, StandardCharsets.UTF_8.toString())
-                                        val encodedDate = URLEncoder.encode(classSession.date, StandardCharsets.UTF_8.toString())
-                                        val description = if (classSession.description.isBlank()) "_" else classSession.description
-                                        val time = if (classSession.time.isBlank()) "_" else classSession.time
-                                        val encodedDescription = URLEncoder.encode(description, StandardCharsets.UTF_8.toString())
-                                        val encodedTime = URLEncoder.encode(time, StandardCharsets.UTF_8.toString())
-                                        navController.navigate(
-                                            "class_detail/$encodedId/$encodedName/$encodedType/$encodedDate/$encodedDescription/$encodedTime"
-                                        )
-                                    },
-                                    modifier = Modifier.width(280.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Torneos Próximos
+                // Próximo Objetivo (Torneos)
                 if (upcomingTournaments.isNotEmpty()) {
                     item {
                         Text(
-                            text = "Torneos Próximos",
+                            text = "Próximo Objetivo",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
                     }
                     
-                    items(upcomingTournaments.take(2)) { tournament ->
-                        TournamentCard(tournament = tournament)
+                    // Solo mostrar el primer torneo próximo
+                    item {
+                        TournamentCard(tournament = upcomingTournaments.first())
                     }
+                }
+                
+                // Espacio al final para scroll
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
 
             }
@@ -267,12 +192,20 @@ fun UpcomingClassCard(
     
     Card(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth(),
         shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = MaterialTheme.colorScheme.background
         ),
-        elevation = CardDefaults.cardElevation(2.dp)
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 4.dp,
+            pressedElevation = 8.dp
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+        )
     ) {
         Column(
             modifier = Modifier
@@ -289,7 +222,7 @@ fun UpcomingClassCard(
                     text = classSession.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
                 
@@ -316,7 +249,7 @@ fun UpcomingClassCard(
                 Text(
                     text = classSession.description,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             }
             

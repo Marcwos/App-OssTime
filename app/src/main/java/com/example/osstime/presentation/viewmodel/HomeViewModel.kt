@@ -107,26 +107,68 @@ class HomeViewModel(
      * Verifica si una fecha corresponde al día de hoy
      */
     private fun isToday(date: String, calendar: Calendar): Boolean {
-        // Implementación simplificada - en producción usar formato de fecha real
-        return date.contains("hoy", ignoreCase = true) || 
-               date.contains(calendar.get(Calendar.DAY_OF_MONTH).toString())
+        return try {
+            val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            val classDate = dateFormat.parse(date)
+            
+            if (classDate != null) {
+                val classCalendar = Calendar.getInstance()
+                classCalendar.time = classDate
+                
+                calendar.get(Calendar.YEAR) == classCalendar.get(Calendar.YEAR) &&
+                calendar.get(Calendar.DAY_OF_YEAR) == classCalendar.get(Calendar.DAY_OF_YEAR)
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            Log.e("HomeViewModel", "Error parsing date: $date", e)
+            false
+        }
     }
 
     /**
      * Verifica si una fecha corresponde a mañana
      */
     private fun isTomorrow(date: String, calendar: Calendar): Boolean {
-        // Implementación simplificada - en producción usar formato de fecha real
-        return date.contains("mañana", ignoreCase = true) ||
-               date.contains((calendar.get(Calendar.DAY_OF_MONTH) + 1).toString())
+        return try {
+            val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            val classDate = dateFormat.parse(date)
+            
+            if (classDate != null) {
+                val classCalendar = Calendar.getInstance()
+                classCalendar.time = classDate
+                
+                calendar.get(Calendar.YEAR) == classCalendar.get(Calendar.YEAR) &&
+                (calendar.get(Calendar.DAY_OF_YEAR) + 1) == classCalendar.get(Calendar.DAY_OF_YEAR)
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            Log.e("HomeViewModel", "Error parsing date: $date", e)
+            false
+        }
     }
 
     /**
      * Verifica si una fecha es próxima (futuras)
      */
     private fun isUpcoming(date: String): Boolean {
-        // Por ahora retorna true para todas las clases
-        // En producción: parsear fecha y comparar con hoy
-        return true
+        return try {
+            val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            val classDate = dateFormat.parse(date)
+            val today = Calendar.getInstance()
+            
+            // Normalizar a medianoche para comparación
+            today.set(Calendar.HOUR_OF_DAY, 0)
+            today.set(Calendar.MINUTE, 0)
+            today.set(Calendar.SECOND, 0)
+            today.set(Calendar.MILLISECOND, 0)
+            
+            // La clase es próxima si es posterior a hoy
+            classDate != null && classDate.after(today.time)
+        } catch (e: Exception) {
+            Log.e("HomeViewModel", "Error parsing date: $date", e)
+            false
+        }
     }
 }

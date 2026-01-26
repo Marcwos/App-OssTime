@@ -140,6 +140,11 @@ fun StudentsScreen(
                     items(students) { student ->
                         StudentItem(student = student)
                     }
+                    
+                    // Espacio al final para scroll
+                    item {
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
                 }
             }
         }
