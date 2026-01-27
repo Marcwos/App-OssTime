@@ -62,13 +62,22 @@ class TournamentViewModel(
             tournamentRepository.observeTournaments()
                 .catch { e ->
                     Log.e(TAG, "Error observing tournaments", e)
-                    _error.value = "Error al cargar torneos: ${e.message}"
+                    val errorMessage = when {
+                        e.message?.contains("PERMISSION_DENIED") == true -> 
+                            "Error de permisos: Verifica las reglas de Firebase"
+                        e.message?.contains("index") == true -> 
+                            "Se requiere un índice compuesto. Ve a la consola de Firebase para crearlo."
+                        else -> "Error al cargar torneos: ${e.message}"
+                    }
+                    _error.value = errorMessage
                     _isLoading.value = false
+                    _tournaments.value = emptyList() // Asegurar lista vacía en caso de error
                 }
                 .collect { tournamentList ->
                     Log.d(TAG, "Torneos recibidos: ${tournamentList.size}")
                     _tournaments.value = tournamentList
                     _isLoading.value = false
+                    _error.value = null // Limpiar error si la carga es exitosa
                 }
         }
     }
@@ -81,6 +90,8 @@ class TournamentViewModel(
             tournamentRepository.observeUpcomingTournaments()
                 .catch { e ->
                     Log.e(TAG, "Error observing upcoming tournaments", e)
+                    // No mostrar error aquí para no interferir con la UI principal
+                    _upcomingTournaments.value = emptyList()
                 }
                 .collect { tournamentList ->
                     Log.d(TAG, "Próximos torneos: ${tournamentList.size}")

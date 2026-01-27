@@ -81,18 +81,40 @@ class TournamentRepositoryImpl : TournamentRepository {
     }
     
     override fun observeTournaments(): Flow<List<Tournament>> = callbackFlow {
+        // No usar orderBy aquí para evitar necesidad de índice
+        // Ordenaremos en memoria después
         val listener = tournamentsCollection
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     Log.e(TAG, "Error observing tournaments", error)
-                    trySend(emptyList())
+                    Log.e(TAG, "Código de error: ${error.code}, Mensaje: ${error.message}")
+                    // Propagar el error en lugar de enviar lista vacía
+                    close(error)
                     return@addSnapshotListener
                 }
-                val tournaments = snapshot?.documents?.mapNotNull { it.toTournament() } 
-                    ?.sortedBy { it.date }
-                    ?: emptyList()
-                Log.d(TAG, "Snapshot received: ${tournaments.size} tournaments")
-                trySend(tournaments)
+                
+                val tournaments = snapshot?.documents?.mapNotNull { it.toTournament() } ?: emptyList()
+                
+                // Ordenar por fecha en memoria (formato dd/MM/yyyy)
+                val sortedTournaments = tournaments.sortedWith { t1, t2 ->
+                    try {
+                        val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                        val date1 = dateFormat.parse(t1.date)
+                        val date2 = dateFormat.parse(t2.date)
+                        when {
+                            date1 == null && date2 == null -> 0
+                            date1 == null -> 1
+                            date2 == null -> -1
+                            else -> date1.compareTo(date2)
+                        }
+                    } catch (e: Exception) {
+                        // Si hay error al parsear, mantener orden original
+                        t1.date.compareTo(t2.date)
+                    }
+                }
+                
+                Log.d(TAG, "Snapshot received: ${sortedTournaments.size} tournaments")
+                trySend(sortedTournaments)
             }
         awaitClose { listener.remove() }
     }
@@ -102,7 +124,9 @@ class TournamentRepositoryImpl : TournamentRepository {
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     Log.e(TAG, "Error observing upcoming tournaments", error)
-                    trySend(emptyList())
+                    Log.e(TAG, "Código de error: ${error.code}, Mensaje: ${error.message}")
+                    // Propagar el error en lugar de enviar lista vacía
+                    close(error)
                     return@addSnapshotListener
                 }
                 

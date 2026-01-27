@@ -105,7 +105,13 @@ class UserRepositoryImpl : UserRepository {
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     Log.e(TAG, "Error observando usuarios pendientes", error)
-                    close(error)
+                    Log.e(TAG, "Código de error: ${error.code}, Mensaje: ${error.message}")
+                    // Si es un error de índice faltante, proporcionar mensaje más claro
+                    if (error.message?.contains("index") == true) {
+                        close(Exception("Se requiere un índice compuesto en Firestore. Ve a la consola de Firebase para crear el índice automáticamente."))
+                    } else {
+                        close(error)
+                    }
                     return@addSnapshotListener
                 }
                 
@@ -126,7 +132,13 @@ class UserRepositoryImpl : UserRepository {
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     Log.e(TAG, "Error observando profesores activos", error)
-                    close(error)
+                    Log.e(TAG, "Código de error: ${error.code}, Mensaje: ${error.message}")
+                    // Si es un error de índice faltante, proporcionar mensaje más claro
+                    if (error.message?.contains("index") == true) {
+                        close(Exception("Se requiere un índice compuesto en Firestore. Ve a la consola de Firebase para crear el índice automáticamente."))
+                    } else {
+                        close(error)
+                    }
                     return@addSnapshotListener
                 }
                 
