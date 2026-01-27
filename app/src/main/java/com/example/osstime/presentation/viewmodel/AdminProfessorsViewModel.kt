@@ -108,7 +108,7 @@ class AdminProfessorsViewModel(
                 Log.e(TAG, "Error al aprobar usuario", e)
                 _uiState.value = ProfessorsUiState.Error("Error al aprobar: ${e.message}")
             } finally {
-                _isProcessing.value = false
+                _isProcessing.value = false 
             }
         }
     }
